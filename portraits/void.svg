@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 156">
+  <defs>
+    <linearGradient id="shell" x1="0" x2=".85" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#fff"/>
+      <stop offset="1" stop-color="#acc6df"/>
+    </linearGradient>
+    <linearGradient id="blue" x2=".75" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#66c8ff"/>
+      <stop offset="1" stop-color="#2166cb"/>
+    </linearGradient>
+    <linearGradient id="visor" x1=".2" x2=".75" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#2d4760"/>
+      <stop offset="1" stop-color="#0d1828"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="72" cy="146" rx="36" ry="6" fill="#0d233b" opacity=".26"/>
+  <g stroke="#1b3853" stroke-width="2.5">
+    <path d="M49 120v16q-10 3-11 8h27l2-23m28-1v16q10 3 11 8H79l-2-23" fill="url(#shell)" stroke-linejoin="round"/>
+    <path d="M43 98q-11 5-14 23m72-23q11 5 14 23" fill="none" stroke="#aacbe3" stroke-width="11" stroke-linecap="round"/>
+    <rect x="39" y="83" width="66" height="48" rx="23" fill="url(#shell)"/>
+    <path d="M40 108h64v5a14 14 0 0 1-5 9H45a14 14 0 0 1-5-9z" fill="url(#blue)" stroke="none"/>
+    <path d="M72 29V14" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="72" cy="11" r="5" fill="#8ae1ff"/>
+    <rect x="12" y="52" width="26" height="32" rx="13" fill="url(#blue)"/>
+    <rect x="106" y="52" width="26" height="32" rx="13" fill="url(#blue)"/>
+    <rect x="23" y="26" width="98" height="74" rx="34" fill="url(#shell)"/>
+    <rect x="33" y="42" width="78" height="47" rx="22" fill="url(#visor)" stroke="#0d1828"/>
+  </g>
+  <path d="M42 57q4-7 13-8h31" fill="none" stroke="#8bd9ff" stroke-opacity=".25" stroke-width="2" stroke-linecap="round"/>
+  <path d="M49 70q6-9 12 0m22 0q6-9 12 0m-28 5q5 5 10 0" fill="none" stroke="#d7f9ff" stroke-width="3.5" stroke-linecap="round"/>
+  <text x="72" y="118" fill="white" font-family="sans-serif" font-size="8" font-weight="bold" letter-spacing="1" text-anchor="middle">V.I.D</text>
+</svg>
