@@ -350,7 +350,7 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
       setAsking(true)
       setChat(previous => [...previous.slice(-7), { input, reply: null }])
       const history = chat.slice(-4).map(turn => ({ player: turn.input ?? '', void: turn.reply?.text ?? '' }))
-      const result = await askGemini('/api/void-chat', { caseId: item.id, known, question: input, phase, history }, 14000, controller.signal)
+      const result = await askGemini('/api/void-chat', { caseId: item.id, known, question: input, phase, history, solved: solvedProblems }, 14000, controller.signal)
       if (controller.signal.aborted) return
       if (result?.reply) reply = { text: result.reply }
       pendingQuestion.current = null
