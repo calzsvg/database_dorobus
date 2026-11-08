@@ -21,9 +21,15 @@ export function Sprite({ name, x, y, w, h, flip = false, opacity }) {
 }
 
 // 바깥 장면: Kenney 하늘·풀밭 배경의 아래쪽을 쓰고, 해(또는 저녁 노을), 구름, 나무를 얹는다
+// 화면이 그림보다 넓거나 높아도 흐린 복사본 대신 배경이 그대로 이어지도록, 배경만 그림 바깥까지 넓게 그린다
+const WIDE = { x: -1260, y: -1200, w: 2940, h: 2600 }
+const TILES = [-1260, -840, -420, 0, 420, 840, 1260]
 function Outdoor({ dusk = false, trees = true }) {
+  const bg = dusk ? 'backgroundColorFall' : 'backgroundColorGrass'
   return <>
-    <image href={K(dusk ? 'backgroundColorFall' : 'backgroundColorGrass')} x="0" y="-190" width="420" height="420" preserveAspectRatio="none" />
+    <rect x={WIDE.x} y={WIDE.y} width={WIDE.w} height={WIDE.h / 2} fill="rgb(207,239,252)" />
+    <rect x={WIDE.x} y="200" width={WIDE.w} height={WIDE.h / 2} fill={dusk ? 'rgb(210,107,76)' : 'rgb(35,191,118)'} />
+    {TILES.map(x => <image key={x} href={K(bg)} x={x} y="-190" width="420.6" height="420" preserveAspectRatio="none" />)}
     <Sprite name={dusk ? 'moon' : 'sun'} x={dusk ? 340 : 52} y={10} w={22} />
     <Sprite name="cloud1" x={120} y={6} w={44} opacity={0.9} />
     <Sprite name="cloud3" x={250} y={14} w={38} opacity={0.85} />
@@ -39,7 +45,8 @@ function Outdoor({ dusk = false, trees = true }) {
 // 축제 장식: Kenney 사격장 천막 장식을 위쪽에 이어 붙인다
 function Valance({ y = 0, h = 14 }) {
   const w = (256 * h) / 80
-  return <>{Array.from({ length: Math.ceil(420 / w) }, (_, i) => <Sprite key={i} name="curtain_straight" x={i * w} y={y} w={w} h={h} />)}</>
+  const start = Math.floor(WIDE.x / w)
+  return <>{Array.from({ length: Math.ceil(WIDE.w / w) + 1 }, (_, i) => <Sprite key={i} name="curtain_straight" x={(start + i) * w} y={y} w={w + 0.5} h={h} />)}</>
 }
 
 // 실내 장면: 나무 벽(Kenney bg_wood 무늬)과 바닥
@@ -50,9 +57,9 @@ function Indoor({ floor = 113 }) {
         <image href={K('bg_wood')} width="48" height="48" />
       </pattern>
     </defs>
-    <rect width="420" height="158" fill="url(#repair-wood)" />
-    <rect width="420" height={floor} fill="#fff3dd" opacity=".35" />
-    <rect y={floor} width="420" height={158 - floor} fill="#8a5a3a" opacity=".55" />
+    <rect x={WIDE.x} y={WIDE.y} width={WIDE.w} height={WIDE.h} fill="url(#repair-wood)" />
+    <rect x={WIDE.x} y={WIDE.y} width={WIDE.w} height={floor - WIDE.y} fill="#fff3dd" opacity=".35" />
+    <rect x={WIDE.x} y={floor} width={WIDE.w} height={WIDE.h} fill="#8a5a3a" opacity=".55" />
   </>
 }
 

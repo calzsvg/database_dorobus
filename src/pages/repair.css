@@ -501,3 +501,85 @@
 
 /* Gemini 연결 표시 */
 .repair-ai-badge { margin-left: .35rem; padding: .05rem .35rem; border-radius: 999px; background: #486957; color: #fff; font-size: .62rem; font-style: normal; vertical-align: middle; }
+
+/* ================= 팀 피드백 반영 (11-08): 흰색 위주, 인물과 말풍선, 큰 글자, 조사 방법 버튼 ================= */
+/* 화면 아래쪽(말풍선 + 버튼)이 커졌으니 장면 그림이 그만큼 위로 비켜 선다 */
+.repair-stage { --bottom: 250px; }
+
+/* 흰색 패널 */
+.repair-hud-title, .repair-hud-side, .repair-hud-actions, .repair-hud-line, .repair-overlay-card {
+  background: #fffffff5; border-color: #e6e1d6;
+}
+.repair-hud-side { border-top-color: var(--green); }
+.repair-scene-stage figcaption { background: #fffffff0; border-color: #e6e1d6; }
+.repair-hud-title h2 { font-size: clamp(1.25rem, 2.2vw, 1.7rem); }
+.repair-hud-title .repair-steps li { font-size: .82rem; }
+
+/* 말하는 인물 + 말풍선: 인물이 말풍선 왼쪽 위에 서 있고, 말풍선 꼬리가 인물을 가리킨다 */
+.repair-hud-line {
+  position: relative; max-width: none; min-height: 84px; margin-top: clamp(110px, 20vh, 190px);
+  padding: .9rem 1.2rem .9rem clamp(150px, 15vw, 210px); border-radius: 18px; box-shadow: 0 10px 28px #2b211a2e;
+}
+.repair-hud-line::before {
+  content: ''; position: absolute; left: clamp(70px, 7vw, 100px); top: -13px; width: 26px; height: 26px;
+  background: inherit; border-left: 1px solid #e6e1d6; border-top: 1px solid #e6e1d6; transform: rotate(45deg); border-radius: 4px 0 0 0;
+}
+.repair-hud-line p { font-size: clamp(1.02rem, 1.25vw, 1.2rem); line-height: 1.55; }
+.repair-hud-line b { margin-bottom: .15rem; font-size: .9rem; }
+.repair-hud-line.is-npc { background: #fffffff5; border-color: #f0d3a3; }
+.repair-hud-line.is-npc::before { border-color: #f0d3a3; }
+.repair-speaker {
+  position: absolute; left: clamp(10px, 1.2vw, 18px); bottom: calc(100% - 52px); z-index: 1; margin: 0;
+  display: flex; flex-direction: column; align-items: center; width: clamp(130px, 13vw, 190px);
+  animation: repair-speaker-in .3s cubic-bezier(.2, .8, .2, 1) both; pointer-events: none;
+}
+.repair-speaker img { width: 100%; height: clamp(130px, 22vh, 210px); object-fit: contain; object-position: bottom; filter: drop-shadow(0 8px 14px #2b211a40); }
+.repair-speaker .repair-npc-badge { width: clamp(100px, 10vw, 140px); height: clamp(100px, 10vw, 140px); font-size: 2.6rem; }
+.repair-speaker figcaption {
+  margin-top: -10px; padding: .2rem .7rem; border-radius: 999px; background: #2f3d33; color: #fff; font-size: .82rem; font-weight: 800; white-space: nowrap;
+}
+.repair-hud-line.is-npc .repair-speaker figcaption { background: #8a5a2b; }
+@keyframes repair-speaker-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .repair-speaker { animation: none; } }
+
+/* 조사 방법(관찰, 질문, 점검, 기록): 텍스트 탭 대신 눈에 띄는 큰 버튼 */
+.repair-hud-actions .repair-category-tabs { flex-basis: 100%; display: flex; gap: .5rem; }
+.repair-category-tabs button {
+  display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: .45rem 1.05rem;
+  border: 2px solid #d9d3c6; border-radius: 12px; background: #fff; color: var(--ink);
+  font-size: 1.02rem; font-weight: 800; cursor: pointer; box-shadow: 0 3px #e6e1d6;
+}
+.repair-category-tabs button span { font-size: 1.15rem; }
+.repair-category-tabs button[aria-pressed="true"] { color: #fff; box-shadow: 0 3px #00000033; }
+.repair-category-tabs button[data-type="관찰"][aria-pressed="true"] { background: #3d7ea6; border-color: #3d7ea6; }
+.repair-category-tabs button[data-type="질문"][aria-pressed="true"] { background: #b8732e; border-color: #b8732e; }
+.repair-category-tabs button[data-type="점검"][aria-pressed="true"] { background: #486957; border-color: #486957; }
+.repair-category-tabs button[data-type="기록"][aria-pressed="true"] { background: #7a5c9e; border-color: #7a5c9e; }
+.repair-category-tabs button:not([aria-pressed="true"]):hover { border-color: #b5ab98; }
+
+/* 조사 버튼과 시험 버튼 글자 크게 */
+.repair-action { font-size: 1.02rem; min-height: 50px; }
+.repair-action-ask small { font-size: .78rem; }
+.repair-evidence { font-size: .88rem; }
+.repair-control { font-size: .95rem; }
+.repair-chips button { font-size: .92rem; padding: .4rem .75rem; }
+
+/* 오른쪽 대화 창: 말풍선과 글자 크게 */
+.repair-side-tabs button { font-size: 1.02rem; padding: .8rem .4rem; }
+.repair-hud-side .repair-chat-log { font-size: 1.02rem; line-height: 1.6; background: #fafaf7; }
+.repair-chat-bubble { max-width: 92%; padding: .65rem .85rem; border-radius: 4px 14px 14px; background: #eef3ea; }
+.repair-chat-player { border-radius: 14px 4px 14px 14px; background: #fbe9d7; }
+.repair-chat-npc { background: #fff3dc; }
+.repair-chat-prompt { font-size: .95rem !important; padding: .5rem .7rem; }
+.repair-chat textarea { font-size: 1.02rem; }
+.repair-notes, .repair-note-fact { font-size: 1rem; }
+.repair-note-thought { font-size: .95rem; }
+.repair-evidence-pick label { font-size: .95rem; }
+.repair-overlay-line { font-size: 1rem; }
+
+/* 흐린 배경 복사본 없이: 장면 그림의 배경(하늘, 풀밭, 나무 벽)이 화면 끝까지 그대로 이어진다(RepairSet의 WIDE) */
+.repair-stage-fill { display: none; }
+.repair-scene-stage { overflow: hidden; background: #cfeffc; }
+.repair-scene.repair-scene-stage .repair-stage-main {
+  overflow: visible; filter: none; -webkit-mask-image: none; mask-image: none;
+}

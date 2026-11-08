@@ -33,6 +33,39 @@ function route(points) {
   return points.map(([x, y]) => [x, y + 10].join(',')).join(' ')
 }
 
+// 실제 물체처럼 보이게: 레일은 침목 위 두 겹 철로, 도로는 테두리와 중앙선, 관은 테두리와 광택, 전선은 피복
+const asPoints = (pts) => typeof pts === 'string' ? pts : route(pts)
+function Rail({ points, d }) {
+  const P = (props) => d ? <path d={d} fill="none" {...props} /> : <polyline points={asPoints(points)} fill="none" {...props} />
+  return <g strokeLinejoin="round" strokeLinecap="round">
+    <P stroke="#6b4a33" strokeWidth="14" strokeDasharray="3 6" strokeLinecap="butt" />
+    <P stroke="#3f444c" strokeWidth="7" />
+    <P stroke="#c3cbd3" strokeWidth="2.4" />
+  </g>
+}
+function Road({ points, d, width = 11, planned = false }) {
+  const P = (props) => d ? <path d={d} fill="none" {...props} /> : <polyline points={asPoints(points)} fill="none" {...props} />
+  if (planned) return <g strokeLinejoin="round"><P stroke="#7b8b84" strokeWidth={width} strokeDasharray="7 5" opacity=".55" /></g>
+  return <g strokeLinejoin="round" strokeLinecap="round">
+    <P stroke="#7a6248" strokeWidth={width + 4} />
+    <P stroke="#c7ad86" strokeWidth={width} />
+    <P stroke="#f6ead2" strokeWidth="1.3" strokeDasharray="6 6" />
+  </g>
+}
+function Pipe({ d, color = '#d8c29a', opacity = 1 }) {
+  return <g fill="none" strokeLinejoin="round" strokeLinecap="round" opacity={opacity}>
+    <path d={d} stroke="#5f4c3a" strokeWidth="10" />
+    <path d={d} stroke={color} strokeWidth="7" />
+    <path d={d} stroke="#fff" strokeWidth="1.6" opacity=".55" transform="translate(-1 -1.5)" />
+  </g>
+}
+function Cable({ d, color, off = false }) {
+  return <g fill="none" strokeLinejoin="round" strokeLinecap="round" opacity={off ? .45 : 1}>
+    <path d={d} stroke="#1f2a2e" strokeWidth="6" />
+    <path d={d} stroke={color} strokeWidth="3.4" strokeDasharray={off ? '4 5' : undefined} />
+  </g>
+}
+
 // 선물 상자(Kenney)
 function Box({ x, y, color = 'yellow', size = 18 }) {
   return <Sprite name={`present_large_${color}`} x={x - size / 2} y={y - size / 2} w={size} />
@@ -117,8 +150,7 @@ function Food({ settings, trial, inspected, field, known, progress }) {
   // 갈림길이 어디로 열려 있는지는 투입 순서를 점검하거나 치즈 늦추기를 해 봐야 보인다
   const showBranch = extra && (!field || known.includes('order') || known.includes('delay'))
   return <>
-    {showBranch && <path d={diverted ? 'M245 76h66l61 23' : `M${branchX} 64v23h${branchX < 210 ? 63 : -55}`}
-      stroke={diverted ? '#a85c45' : '#a38a5b'} strokeWidth="5" strokeDasharray="4 5" fill="none" opacity=".6" />}
+    {showBranch && <Pipe d={diverted ? 'M245 76h66l61 23' : `M${branchX} 64v23h${branchX < 210 ? 63 : -55}`} color={diverted ? '#e3a48f' : '#ecd39c'} />}
     {showBranch && <Sprite name="industrial_067" x={(diverted ? 245 : branchX) - 8} y={(diverted ? 76 : 64) - 8} w={16} />}
     <BurgerLine x={22} width={376} label={field && !inspected ? '조리대' : inspected === 'delay' ? '치즈 늦게 넣기' : extra ? '치즈 추가' : '기본 주문'}
       extra={extra} early={extra && early} diverted={extra && diverted} progress={progress} />
@@ -136,7 +168,8 @@ function Carousel({ settings, trial, field, known, progress }) {
   // 받침대 높이는 직접 재 보기 전에는 덤불에 가려 있다
   const measured = !field || known.includes('height')
   return <>
-    <path d="M92 126h237" stroke="#688d80" strokeWidth="3" />
+    <rect x="86" y="124" width="249" height="9" rx="3" fill="#8f7a62" stroke="#5f4c3a" strokeWidth="1.2" />
+    <rect x="86" y="124" width="249" height="2.5" rx="1" fill="#c9b293" />
     {/* 직접 재기 전에는 받침대가 덤불에 가려 있다 */}
     {!measured && [86, 160, 236, 300].map((x) => <Sprite key={x} name="bushAlt1" x={x} y={100} w={44} />)}
     {measured && [105, 213, 320].map((x, i) => {
@@ -181,9 +214,9 @@ function Safari({ settings, trial, field, known, progress }) {
   // 짐칸은 열어 봐야 보이고, 무게는 재 봐야 보인다
   const showCargo = cargo && (!field || known.includes('cargo') || known.includes('weight'))
   return <>
-    <Caption x={82} y={27}>3호차, 투어 노선</Caption>
+    <Caption x={82} y={27}>투어 차량 노선</Caption>
     <Caption x={345} y={27} color={mint}>동물 구역</Caption>
-    <polyline points={route(hill)} fill="none" stroke="#b39a74" strokeWidth="7" strokeLinejoin="round" strokeLinecap="round" />
+    <Road points={hill} width={12} />
     <Truck point={point} cargo={showCargo} tilt={!beltTest && progress > .34 && progress < .87 ? -13 : 0} />
     <Belt x={55} y={120} width={310} reverse={!settings.direction} arrows={!field || known.includes('cargo')} />
     {!cargo && <Box x={104 + boxTravel * 228} y={114} />}
@@ -240,8 +273,11 @@ function Coaster({ settings, trial, field, known, progress }) {
     {/* 솜사탕 가게 */}
     <Sprite name="curtain_straight" x={124} y={50} w={40} h={12} />
     <Emoji id="1F36D" x={144} y={72} size={20} />
-    {track.filter((_, i) => i % 2).map(([x, y]) => <path key={x} d={`M${x} ${y + 10}v${134 - y}`} stroke="#446d63" strokeWidth="3" />)}
-    <polyline points={route(track)} fill="none" stroke="#694b45" strokeWidth="4" strokeLinejoin="round" />
+    {track.filter((_, i) => i % 2).map(([x, y]) => <g key={x}>
+      <rect x={x - 3.5} y={y + 12} width="7" height={124 - y} rx="2" fill="#4f7a6f" stroke="#2f4a43" strokeWidth="1" />
+      <rect x={x - 3.5} y={y + 12} width="2.2" height={124 - y} fill="#8fb5aa" opacity=".6" />
+    </g>)}
+    <Rail points={track} />
     {dusty && seenDust && [0, 1, 2, 3, 4, 5, 6].map((i) => <circle key={i} cx={215 + i * 8} cy={117 - i * 4} r={i % 2 ? 2 : 3} fill="#fff" stroke="#c9b9a0" strokeWidth=".6" />)}
     {settings.screen !== 0 && <Sprite name="fence" x={settings.screen === 1 ? 240 : 341} y={34} w={24} />}
     {seenDust && evening && <path d="M161 66h74l-9-6m9 6-9 6" fill="none" stroke={coral} strokeDasharray="4 3" />}
@@ -266,7 +302,7 @@ function Sign({ settings, trial, inspected, field, known, progress }) {
       <rect x="47" y={30 + i * 31} width="184" height="25" rx="5" fill={i === 2 && overload ? '#753e3c' : '#21493f'} />
       <Caption x={139} y={47 + i * 31} color={i === 2 && overload ? '#ffc5a2' : '#f9dda2'}>{line}</Caption>
     </g>)}
-    {traced && <path d={settings.wire === 0 ? 'M246 107h53V67h75' : 'M274 128h34V67h66'} fill="none" stroke={overload ? coral : mint} strokeWidth="3" strokeDasharray={settings.wire === 2 ? '3 5' : undefined} />}
+    {traced && <Cable d={settings.wire === 0 ? 'M246 107h53V67h75' : 'M274 128h34V67h66'} color={overload ? '#e0644f' : '#5fb487'} off={settings.wire === 2} />}
     {traced && <Emoji id="1F50C" x={settings.wire === 0 ? 262 : 290} y={settings.wire === 0 ? 107 : 128} size={16} />}
     {[311, 338, 365].map(x => <Sprite key={x} name={lit ? 'industrial_040' : 'industrial_039'} x={x - 9} y={58} w={18} opacity={lit ? 1 : .45} />)}
     <Caption x={337} y={43}>{night ? '밤, 장식 조명' : '낮, 안내 표시'}</Caption>
@@ -282,8 +318,8 @@ function Parade({ settings, trial, inspected, field, known, progress }) {
   )
   const seen = (id) => !field || known.includes(id)
   return <>
-    <path d="M35 112h89l93-26h122" stroke="#b39a74" strokeWidth="6" fill="none" strokeLinejoin="round" />
-    <path d="M125 114h127l82-18" stroke={settings.route ? mint : '#5e8077'} strokeDasharray="6 5" fill="none" />
+    <Road d="M125 114h127l82-18" width={9} planned={!settings.route} />
+    <Road d="M35 112h89l93-26h122" width={11} />
     <Emoji id="1F3AA" x={352} y={52} size={62} />
     {[329, 351, 376].map((lamp, index) => {
       const on = settings.power || Math.floor(progress * 16 + index) % 3 === 0
@@ -361,7 +397,7 @@ const scenes = { food: Food, carousel: Carousel, safari: Safari, viking: Viking,
 const locations = {
   food: '푸드코트 안쪽 조리대',
   carousel: '회전목마 승강장',
-  safari: '사파리 3호차 출발점',
+  safari: '사파리 투어 출발점',
   viking: '이클립스 탑승장',
   coaster: '롤러코스터 마지막 언덕',
   sign: '광장 입구 전광판',
@@ -402,7 +438,6 @@ export default function RepairScene({ item, settings, trial, inspected, field, k
   const caption = <figcaption><span>{locations[item.id]}</span>{status && <b data-failed={testing && progress >= 1 && !trial.ok}>{status}</b>}</figcaption>
   if (stage) return (
     <figure className={`repair-scene repair-scene-stage repair-scene-${item.id}`}>
-      <svg className="repair-stage-fill" viewBox="0 0 420 158" preserveAspectRatio="xMidYMid slice" aria-hidden="true">{art}</svg>
       <svg className="repair-stage-main" viewBox="0 0 420 158" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${item.district} 장치 작동 그림`}>{art}</svg>
       {caption}
     </figure>

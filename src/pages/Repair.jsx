@@ -23,7 +23,7 @@ const ANIMATED = ['run', 'repeat', 'kids', 'ledoff', 'floor']
 const fieldPrompts = {
   food: '어떤 재료부터 떨어지는지 같이 보자.',
   carousel: '빈 상태로 한 바퀴 돌려 보자. 멈춘 자리를 기억해 둬.',
-  safari: '3호차를 출발시켜 보자. 평지에선 잘 가는지도 봐.',
+  safari: '투어 차량을 출발시켜 보자. 평지에선 잘 가는지도 봐.',
   viking: '운행 모드가 두 개야. 하나씩 돌려 보고 어디서 덜컹하는지 봐.',
   coaster: '아침과 저녁 운행을 비교해 보자. 마지막 언덕에서 뭐가 다를까?',
   sign: '낮 화면부터 보고, 밤까지 지켜보자. 어디가 달라질까?',
@@ -34,6 +34,19 @@ const fieldPrompts = {
 
 // NPC 얼굴 대신 이름 첫 글자 배지
 const NpcBadge = ({ name }) => <span className="repair-npc-badge" aria-hidden="true">{name.slice(0, 1)}</span>
+// 말하는 인물 그림: 이야기 인물은 초상화, 나머지 NPC는 OpenMoji 직업 인물(CC BY-SA 4.0)
+const PORTRAIT = (file) => `${import.meta.env.BASE_URL}portraits/${file}`
+const SPEAKER_ART = {
+  보이드: PORTRAIT('void.svg'), 리코: PORTRAIT('riko.png'), 자일로: PORTRAIT('xylo.png'), 제로: PORTRAIT('zero.png'),
+  '사파리 가이드': image('1F481'), 사육사: image('1F9D1-200D-1F33E'), '푸드코트 점장': image('1F9D1-200D-1F373'),
+  손님: image('1F9D1'), 아르바이트생: image('1F9D1-200D-1F393'), '회전목마 운영자': image('1F9D1-200D-1F527'),
+  '청소 담당': image('1F477'), '회전 바이킹 운영자': image('1F9D1-200D-1F527'), '장식 담당': image('1F9D1-200D-1F3A8'),
+  '장식 담당 직원': image('1F9D1-200D-1F3A8'), '운영 매니저': image('1F9D1-200D-1F4BC'), '솜사탕 가게 주인': image('1F9D1-200D-1F373'),
+  '안내 센터 직원': image('1F481'), '전기 담당 직원': image('1F9D1-200D-1F4BB'), '축제 총감독': image('1F935'),
+  '선물 가게 주인': image('1F9D1-200D-1F4BC'),
+}
+// 조사 방법 버튼의 아이콘
+const CATEGORY_ICON = { 관찰: '🔍', 질문: '💬', 점검: '🔧', 기록: '📋' }
 
 function Countdown() {
   const [left, setLeft] = useState(COUNTDOWN)
@@ -60,6 +73,7 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
   const [speaker, setSpeaker] = useState(null) // 하단 대사의 주인: null이면 보이드, 아니면 NPC 이름
   // 아이가 직접 적는 것들: 관찰마다 든 생각, 가설(문장)과 그 근거로 고른 관찰
   const [thoughts, setThoughts] = useState(investigation.thoughts ?? {})
+  const [revealed, setRevealed] = useState(investigation.revealed ?? []) // ‘막혔어’로 미리 열어 준 조사 버튼
   const [draft, setDraft] = useState(investigation.hypothesis?.text ?? investigation.draft ?? '')
   const [evidence, setEvidence] = useState(investigation.hypothesis?.evidence ?? [])
   const [myHypothesis, setMyHypothesis] = useState(investigation.hypothesis ?? null)
@@ -183,7 +197,28 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
     const step = item.hints.find(candidate => !candidate.clues.some(id => known.includes(id)))
     return step?.text ?? '단서는 충분히 모았어. 수첩의 관찰들을 이어서 무엇이 무엇 때문에 그렇게 됐는지 한 문장으로 적어 봐.'
   }
-  const stuck = () => voidSays(nextHint(), '막혔어')
+  // 아직 숨겨진 조사 버튼: 관련 단서를 먼저 봤거나 ‘막혔어’로 열어 준 것만 보인다
+  const isVisible = (clue) => !clue.after || known.includes(clue.id) || revealed.includes(clue.id) || clue.after.some(id => known.includes(id))
+  // ‘막혔어, 도와줘’: 힌트를 주고, 지금 힌트와 관련된 숨은 조사 버튼이 있으면 하나 열어 준다
+  const stuck = () => {
+    let text = nextHint()
+    if (phase === 'field') {
+      const step = item.hints.find(candidate => !candidate.clues.some(id => known.includes(id)))
+      const hidden = item.clueList.filter(clue => !isVisible(clue))
+      // 지금 힌트와 관련된 버튼을 먼저, 없으면 다음 힌트 순서대로 하나를 연다(도움을 청할 때마다 하나씩)
+      const from = Math.max(0, item.hints.indexOf(step))
+      const order = item.hints.slice(from).flatMap(candidate => candidate.clues)
+      const unlock = order.map(id => hidden.find(clue => clue.id === id)).find(Boolean) ?? hidden[0]
+      if (unlock) {
+        const next = [...revealed, unlock.id]
+        setRevealed(next)
+        save({ revealed: next })
+        setCategory(unlock.type)
+        text += ` ‘${unlock.type}’에 새로 해 볼 게 생겼어!`
+      }
+    }
+    voidSays(text, '막혔어')
+  }
 
   // 가설 말하기 → 보이드가 판정(정답, 부분 정답, 오답). 정답이어야 작업대로 간다
   const submitHypothesis = async () => {
@@ -327,7 +362,7 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
   }
 
   const records6 = REPAIR_CASES.filter(candidate => records[candidate.id])
-  const hudSpeaker = speaker ? <><NpcBadge name={speaker} /><p><b>{speaker}</b>{fact}</p></> : <>{portrait}<p><b>{G.name}</b>{fact}</p></>
+  const hudSpeaker = <p><b>{speaker ?? G.name}</b>{fact}</p>
 
   // 게임 화면 배치: 2D 장면이 화면 전체를 채우고, 그 위에
   //  왼쪽 위: 사건 제목과 진행 단계 / 오른쪽: 보이드 대화와 정비 수첩 / 아래: 대사와 조사, 수리 버튼
@@ -424,19 +459,28 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
         <div className="repair-hud-bottom">
           {/* 대사: 게임 대화창처럼 버튼 바로 위에 띄운다. NPC에게 물었을 때는 그 NPC가 말한다 */}
           <div className={`repair-hud-line${speaker ? ' is-npc' : ''}`} role="status">
+            {/* 말하는 인물이 말풍선 왼쪽 위에 서 있다 */}
+            <figure className="repair-speaker" key={speaker ?? G.name}>
+              {SPEAKER_ART[speaker ?? G.name]
+                ? <img src={SPEAKER_ART[speaker ?? G.name]} alt="" />
+                : <NpcBadge name={speaker ?? G.name} />}
+              <figcaption>{speaker ?? G.name}</figcaption>
+            </figure>
             {hudSpeaker}
             {phase === 'field' && inspected && <button className="repair-text-button" onClick={() => setSideTab('notes')}>수첩에 내 생각 적기</button>}
           </div>
 
           {phase === 'field' && (
             <div className="repair-hud-actions">
-              <div className="repair-tabs" aria-label="조사 방법">
+              <div className="repair-tabs repair-category-tabs" aria-label="조사 방법">
                 {categories.map(type => (
-                  <button key={type} aria-pressed={type === category} onClick={() => setCategory(type)}>{type}</button>
+                  <button key={type} data-type={type} aria-pressed={type === category} onClick={() => setCategory(type)}>
+                    <span aria-hidden="true">{CATEGORY_ICON[type]}</span>{type}
+                  </button>
                 ))}
               </div>
               <div className="repair-action-row">
-                {item.clueList.filter(clue => clue.type === category).map(clue => (
+                {item.clueList.filter(clue => clue.type === category && isVisible(clue)).map(clue => (
                   <button key={clue.id} className={`repair-action${clue.npc ? ' repair-action-ask' : ''}`} data-done={known.includes(clue.id)} disabled={running || (clue.id === 'repeat' && !known.includes('run'))} onClick={() => inspect(clue)}>
                     {clue.npc && <small>{clue.npc}에게</small>}
                     {clue.npc ? `“${clue.label}”` : clue.label}{known.includes(clue.id) ? ' ✓' : ''}
