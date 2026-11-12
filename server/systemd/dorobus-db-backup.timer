@@ -1,0 +1,9 @@
+[Unit]
+Description=DOROBUS login DB daily backup
+
+[Timer]
+OnCalendar=*-*-* 04:30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

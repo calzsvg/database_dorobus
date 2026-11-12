@@ -1,0 +1,14 @@
+# 로그인 DB 하루 백업. 설치 위치: ~/.config/systemd/user/ (dorobus-db-backup.timer가 매일 실행)
+# ~/dorobus/backups/dorobus-YYYYMMDD.dump 로 남기고 14일 지난 것은 지운다. 복원: pg_restore -h ~/dorobus/pgsock -p 5433 -d dorobus --clean <파일>
+[Unit]
+Description=DOROBUS login DB daily backup
+Requires=dorobus-db.service
+After=dorobus-db.service
+
+[Service]
+Type=oneshot
+Environment=LD_LIBRARY_PATH=%h/.local/pg16/root/usr/lib/x86_64-linux-gnu
+ExecStartPre=/usr/bin/mkdir -p %h/dorobus/backups
+ExecStart=/bin/sh -c 'umask 077 && %h/.local/pg16/root/usr/lib/postgresql/16/bin/pg_dump -h %h/dorobus/pgsock -p 5433 -U dorobus_owner -Fc -f %h/dorobus/backups/dorobus-$(date +%%Y%%m%%d).dump dorobus'
+ExecStartPost=/usr/bin/find %h/dorobus/backups -name 'dorobus-*.dump' -mtime +14 -delete
+Nice=10

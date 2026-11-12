@@ -2,15 +2,18 @@
 # DOROBUS 프로토타입 화면(dist)과 Gemini 보이드 API를 내부 포트로만 띄운다. Caddy가 HTTPS로 받아 여기로 넘긴다.
 # Node는 ~/.local/node (관리자 권한 없이 사용자 폴더에 설치), 서버 코드는 ~/dorobus/void (자동 배포가 갱신),
 # Gemini 키는 ~/.config/dorobus-gemini/env (GEMINI_API_KEY=..., 권한 600, 깃에 올리지 않음).
+# 로그인 DB 주소는 ~/.config/dorobus-db/env (DOROBUS_DATABASE_URL=..., 권한 600). DB는 dorobus-db.service, pg 패키지는 ~/dorobus/node_modules.
 [Unit]
 Description=DOROBUS prototype (site + Gemini Void API)
-After=network-online.target
+After=network-online.target dorobus-db.service
+Wants=dorobus-db.service
 
 [Service]
 Environment=PORT=8795
 Environment=DOROBUS_DIST=%h/dorobus/dist
 Environment=DOROBUS_ORIGINS=https://a1doro.duckdns.org
 EnvironmentFile=-%h/.config/dorobus-gemini/env
+EnvironmentFile=-%h/.config/dorobus-db/env
 ExecStart=%h/.local/node/bin/node %h/dorobus/void/server/void-server.mjs
 Restart=on-failure
 RestartSec=5

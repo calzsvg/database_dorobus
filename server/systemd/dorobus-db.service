@@ -1,0 +1,24 @@
+# systemd 사용자 서비스. 설치 위치: ~/.config/systemd/user/dorobus-db.service
+# 도로버스 PostgreSQL 16. 관리자 권한 없이 사용자 폴더에 설치했다(server/db/README.md).
+# - 바이너리: ~/.local/pg16 (Ubuntu 공식 postgresql-16 패키지를 풀어 둔 것)
+# - 데이터: ~/dorobus/pgdata, 소켓: ~/dorobus/pgsock, 포트 5433
+# - 네트워크 포트를 열지 않는다(listen_addresses = ''). 이 컴퓨터의 server 사용자만 peer 인증으로 접속한다.
+[Unit]
+Description=DOROBUS PostgreSQL 16
+After=network.target
+
+[Service]
+Type=notify
+Environment=LD_LIBRARY_PATH=%h/.local/pg16/root/usr/lib/x86_64-linux-gnu
+ExecStart=%h/.local/pg16/root/usr/lib/postgresql/16/bin/postgres -D %h/dorobus/pgdata
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutSec=120
+Restart=on-failure
+RestartSec=5
+MemoryMax=768M
+Nice=5
+
+[Install]
+WantedBy=default.target
