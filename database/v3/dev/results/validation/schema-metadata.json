@@ -3691,9 +3691,25 @@
           "generated": "",
           "default_value": null,
           "description": "자체 로그인 비밀번호 해시(scrypt$N$r$p$salt$hash). 외부 로그인 계정은 NULL. 원문 저장 금지"
+        },
+        {
+          "name": "age",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "만 나이(한국 시간 기준). birth_date로 자동 계산, 직접 입력값은 무시. refresh_user_ages()가 생일 지난 값을 갱신"
         }
       ],
       "constraints": [
+        {
+          "name": "users_age_nonnegative_check",
+          "type": "c",
+          "definition": "CHECK ((age >= 0))",
+          "target_table": null,
+          "columns": "{age}",
+          "target_columns": "{}"
+        },
         {
           "name": "users_auth_subject_nonempty_check",
           "type": "c",
@@ -3857,11 +3873,16 @@
       "definition": "CREATE TRIGGER repair_runs_identity_guard BEFORE UPDATE ON dorobus.repair_runs FOR EACH ROW EXECUTE FUNCTION dorobus.guard_repair_run_identity()"
     },
     {
+      "name": "users_set_age",
+      "table_name": "users",
+      "definition": "CREATE TRIGGER users_set_age BEFORE INSERT OR UPDATE ON dorobus.users FOR EACH ROW EXECUTE FUNCTION dorobus.set_user_age()"
+    },
+    {
       "name": "wallets_touch_updated_at",
       "table_name": "wallets",
       "definition": "CREATE TRIGGER wallets_touch_updated_at BEFORE UPDATE ON dorobus.wallets FOR EACH ROW EXECUTE FUNCTION dorobus.touch_updated_at()"
     }
   ],
   "table_count": 28,
-  "column_count": 208
+  "column_count": 209
 }

@@ -34,6 +34,11 @@ export function createAuth(databaseUrl) {
   let poolPromise
   const pool = () => (poolPromise ??= import('pg').then(({ default: pg }) => new pg.Pool({ connectionString: databaseUrl, max: 4 })))
   const profile = async (loginId) => (await (await pool()).query(PROFILE_SQL, [loginId])).rows[0]
+  // users.age(009)는 저장값이라 생일이 지나면 낡는다. 시작할 때와 1시간마다 갱신한다(009가 없으면 조용히 넘어감).
+  const refreshAges = () => pool().then((p) => p.query('SELECT dorobus.refresh_user_ages()')).catch(() => {})
+  refreshAges()
+  const ageTimer = setInterval(refreshAges, 3600_000)
+  ageTimer.unref?.()
 
   async function login(input) {
     const id = text(input?.id, 50), password = text(input?.password, 200)
@@ -58,7 +63,7 @@ export function createAuth(databaseUrl) {
     return { status: 200, body: { user: toProfile(await profile(account.id)) } }
   }
 
-  return { login, signup, close: async () => poolPromise && (await poolPromise).end() }
+  return { login, signup, refreshAges, close: async () => { clearInterval(ageTimer); if (poolPromise) await (await poolPromise).end() } }
 }
 
 // JSON 본문 읽기(크기 제한). 너무 크면 null

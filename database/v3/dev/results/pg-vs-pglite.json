@@ -1,20 +1,20 @@
 {
-  "compared_objects": 514,
+  "compared_objects": 517,
   "pglite": {
     "tables": 28,
-    "columns": 208,
-    "constraints_excluding_not_null": 200,
-    "not_null_constraint_rows": 162,
+    "columns": 209,
+    "constraints_excluding_not_null": 201,
+    "not_null_constraint_rows": 163,
     "indexes": 75,
-    "triggers": 3
+    "triggers": 4
   },
   "pg16": {
     "tables": 28,
-    "columns": 208,
-    "constraints_excluding_not_null": 200,
+    "columns": 209,
+    "constraints_excluding_not_null": 201,
     "not_null_constraint_rows": 0,
     "indexes": 75,
-    "triggers": 3
+    "triggers": 4
   },
   "only_pglite": [],
   "only_pg16": [],
