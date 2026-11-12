@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-12T06:56:18.396Z",
+  "generated_at": "2026-11-12T07:15:13.048Z",
   "engine": "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.3.34.2), 64-bit",
-  "passed": 100,
+  "passed": 101,
   "failed": 0,
   "results": [
     {
-      "name": "공통 15 + 수리 12 + 면허 1 = 28개 / 207개 컬럼 (v3 206 + 007 birth_date)",
+      "name": "공통 15 + 수리 12 + 면허 1 = 28개 / 208개 컬럼 (v3 206 + 007 birth_date + 008 password_hash)",
       "pass": true
     },
     {
@@ -394,6 +394,10 @@
     },
     {
       "name": "register_user: 생년월일 누락·미래 날짜·아이디 중복 거부",
+      "pass": true
+    },
+    {
+      "name": "008 register_local_user: 해시·local 주체 저장, 해시 형식 아니면 거부",
       "pass": true
     },
     {

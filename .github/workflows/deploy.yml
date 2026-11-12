@@ -32,7 +32,8 @@ jobs:
       - name: 보이드 서버 묶기
         run: |
           mkdir -p dist/_void/server dist/_void/src/game
-          cp server/void-server.mjs server/void-demo.mjs dist/_void/server/
+          cp server/void-server.mjs server/void-demo.mjs server/auth.mjs dist/_void/server/
+          cp src/accounts.js dist/_void/src/
           cp -r server/prompts dist/_void/server/
           cp src/game/repairCases.js dist/_void/src/game/
           echo '{"type":"module"}' > dist/_void/package.json

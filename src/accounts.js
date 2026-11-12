@@ -14,16 +14,18 @@ export const DEMO_STAGES = {
   },
 }
 
+// birthDate는 DB(users.birth_date 필수)에 넣기 위한 체험용 임의 값이다.
+// DB에 연결되면 로그인 시 이름·역할·생년월일은 DB 값을 쓰고, level·cell·preset 같은 게임 설정만 여기 값을 쓴다.
 export const ACCOUNTS = [
-  { id: 'a1', password: '1234', role: 'student', name: 'A1 학생', level: 1, cell: 1000 },
-  { id: 'a2', password: '1234', role: 'student', name: 'A2 학생', level: 2, cell: 1500 },
-  { id: 'a3', password: '1234', role: 'student', name: 'A3 학생', level: 3, cell: 2000 },
-  { id: 'a4', password: '1234', role: 'student', name: 'A4 학생', level: 1, cell: 800 },
-  { id: 'a5', password: '1234', role: 'student', name: 'A5 학생', level: 2, cell: 1200 },
-  { id: 't1', password: '1234', role: 'teacher', name: 'T1 강사', level: 5, cell: 5000 },
+  { id: 'a1', password: '1234', birthDate: '2015-03-14', role: 'student', name: 'A1 학생', level: 1, cell: 1000 },
+  { id: 'a2', password: '1234', birthDate: '2014-07-02', role: 'student', name: 'A2 학생', level: 2, cell: 1500 },
+  { id: 'a3', password: '1234', birthDate: '2013-11-20', role: 'student', name: 'A3 학생', level: 3, cell: 2000 },
+  { id: 'a4', password: '1234', birthDate: '2016-01-09', role: 'student', name: 'A4 학생', level: 1, cell: 800 },
+  { id: 'a5', password: '1234', birthDate: '2014-09-30', role: 'student', name: 'A5 학생', level: 2, cell: 1200 },
+  { id: 't1', password: '1234', birthDate: '1990-05-17', role: 'teacher', name: 'T1 강사', level: 5, cell: 5000 },
   // 발표 시연용: 처음 로그인하면 시연 ① 상태로 시작. 프로필 메뉴에서 시연 ①, ② 상태로 바로 바꿀 수 있다
-  { id: 'd1', password: '1234', role: 'student', name: '시연 학생 1', level: 1, cell: 3000, preset: DEMO_STAGES.license },
-  { id: 'd2', password: '1234', role: 'student', name: '시연 학생 2', level: 2, cell: 3000, preset: DEMO_STAGES.license },
+  { id: 'd1', password: '1234', birthDate: '2015-04-01', role: 'student', name: '시연 학생 1', level: 1, cell: 3000, preset: DEMO_STAGES.license },
+  { id: 'd2', password: '1234', birthDate: '2014-10-10', role: 'student', name: '시연 학생 2', level: 2, cell: 3000, preset: DEMO_STAGES.license },
 ]
 
 // 회원가입 규칙. DB의 dorobus.register_user / dorobus.age_on과 같은 기준을 쓴다.

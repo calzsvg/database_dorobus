@@ -75,13 +75,17 @@ function SignupForm({ onBack }) {
   const [form, setForm] = useState({ id: '', name: '', password: '', passwordConfirm: '', birthDate: '' })
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
   const today = todayInSeoul()
   const set = (key) => (e) => { setForm((f) => ({ ...f, [key]: e.target.value })); setError('') }
   const age = form.birthDate && form.birthDate >= MIN_BIRTH_DATE && form.birthDate <= today ? ageOn(form.birthDate, today) : null
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    const err = signup(form)
+    if (busy) return
+    setBusy(true)
+    const err = await signup(form)
+    setBusy(false)
     if (err) setError(err)
     else navigate('/', { replace: true })
   }
@@ -105,7 +109,7 @@ function SignupForm({ onBack }) {
         {age !== null && <span className="birth-age">만 {age}세</span>}
       </label>
       {error && <p className="err" role="alert">{error}</p>}
-      <button type="submit" className="login-btn">가입하기</button>
+      <button type="submit" className="login-btn" disabled={busy}>{busy ? '가입하는 중…' : '가입하기'}</button>
       <div className="login-links">
         <button type="button" onClick={onBack}>이미 계정이 있어요 · 로그인</button>
       </div>
@@ -122,14 +126,18 @@ export default function Login() {
   const [pw, setPw] = useState('')
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
+    if (busy) return
     if (!id.trim() || !pw) {
       setError('아이디와 비밀번호를 입력해 주세요.')
       return
     }
-    const err = login(id, pw, role)
+    setBusy(true)
+    const err = await login(id, pw, role)
+    setBusy(false)
     if (err) setError(err)
     else navigate('/', { replace: true })
   }
@@ -191,7 +199,7 @@ export default function Login() {
             </button>
           </div>
           {error && <p className="err" role="alert">{error}</p>}
-          <button type="submit" className="login-btn">login</button>
+          <button type="submit" className="login-btn" disabled={busy}>login</button>
           <div className="login-links">
             <button type="button" onClick={openSignup}>회원가입</button>
             <button type="button" onClick={notReady}>아이디, 비밀번호를 잊어버렸나요?</button>

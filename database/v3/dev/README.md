@@ -72,3 +72,22 @@ database/v3/dev/verify-pg.sh
 5. **`driving_licenses.request_id` 전역 UNIQUE.** 다른 요청 키는 사용자별 UNIQUE인데 이것만 전역입니다. UUID라 실제로 충돌할 일은 없습니다.
 
 3~5번은 참고 사항입니다.
+
+## 008 확장: 프로토타입 로그인을 DB와 맞추기
+
+- `sql/008_user_password.sql`: `users.password_hash`(scrypt 해시, 원문 저장 안 함), 자체 로그인 가입 함수 `register_local_user`(`auth_subject = 'local:<아이디>'`)
+- `server/auth.mjs`: `/api/auth/login`, `/api/auth/signup`
+  - 로그인: DB의 해시로 비밀번호를 확인하고, 이름·역할·생년월일·나이를 DB에서 돌려줍니다.
+  - 회원가입: DB에 저장합니다.
+- 화면(`src/store.jsx`)
+  - 이름·역할·생년월일은 DB 값을 씁니다. level·CELL·시연 preset 같은 게임 설정과 진행 기록은 지금처럼 브라우저 값입니다.
+  - 서버에 DB 주소가 없으면(503) 예전처럼 브라우저 체험 계정으로 동작합니다. 그래서 DB가 없는 미니PC에 배포돼도 사이트는 그대로 돌아갑니다.
+- 로컬에서 쓰기:
+  ```bash
+  database/v3/dev/setup-dev-db.sh --reset   # 001~005, 007, 008, 시드 적용
+  npm run db:seed-demo                      # 체험 계정 a1~a5, t1, d1, d2를 DB에 등록 (생년월일은 임의 값)
+  echo 'DOROBUS_DATABASE_URL=postgresql://dorobus_app_dev@localhost:5432/dorobus_dev' >> .env.local
+  npm run dev
+  ```
+- 미니PC에서 DB를 쓰려면 PostgreSQL 설치, `npm ci`(pg 패키지), 서비스 환경 변수 `DOROBUS_DATABASE_URL`이 필요합니다. 아직 하지 않았습니다.
+- 아직 없는 것: 로그인 세션 토큰. 지금은 로그인 결과를 브라우저에 저장하는 수준이고, 서버 API마다 사용자를 확인하지 않습니다.

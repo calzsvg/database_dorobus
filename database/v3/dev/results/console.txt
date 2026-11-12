@@ -1,4 +1,4 @@
-PASS 공통 15 + 수리 12 + 면허 1 = 28개 / 207개 컬럼 (v3 206 + 007 birth_date)
+PASS 공통 15 + 수리 12 + 면허 1 = 28개 / 208개 컬럼 (v3 206 + 007 birth_date + 008 password_hash)
 PASS 현재 소스의 도입 1·축제 6·최종 1·원격 1개 사건 적재
 PASS 본편 스토리 유형은 신규 콘텐츠로 등록 불가
 PASS 기존 공통 SQL 제약 검증 통과
@@ -96,6 +96,7 @@ PASS 1900-01-01 이전 생년월일 거부
 PASS 만 나이 계산: 생일 전날·당일·윤년 2월 29일생
 PASS 서버 런타임은 users 직접 INSERT 불가, register_user로만 학생 가입
 PASS register_user: 생년월일 누락·미래 날짜·아이디 중복 거부
+PASS 008 register_local_user: 해시·local 주체 저장, 해시 형식 아니면 거부
 PASS 나이 뷰는 auth_subject를 노출하지 않음
 PASS 동봉한 분석 조회문 7개 실행 가능
-{"passed":100,"failed":0}
+{"passed":101,"failed":0}

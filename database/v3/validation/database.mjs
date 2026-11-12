@@ -7,7 +7,7 @@ export async function database({extensions=true}={}){
  const module=process.env.PGLITE_MODULE?pathToFileURL(resolve(process.env.PGLITE_MODULE)).href:'@electric-sql/pglite';
  const {PGlite}=await import(module);const notices=[];
  const db=new PGlite({onNotice:n=>notices.push(n.message)});
- for(const file of ['001_core','002_repair','003_license','004_license_issuer','005_runtime_permissions',...(extensions?['007_user_birth_date']:[])])await db.exec(await read('sql/'+file+'.sql'));
+ for(const file of ['001_core','002_repair','003_license','004_license_issuer','005_runtime_permissions',...(extensions?['007_user_birth_date','008_user_password']:[])])await db.exec(await read('sql/'+file+'.sql'));
  await db.exec(await read('examples/001_content.sql'));
  // PGlite의 단일 연결을 공유하는 시험 어댑터. 실제 다중 연결 동시성 검증을 대체하지 않는다.
  let tail=Promise.resolve();

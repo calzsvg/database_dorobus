@@ -5846,6 +5846,14 @@
           "generated": "",
           "default_value": null,
           "description": "생년월일. 계정 만들 때 필수 입력. 미래 날짜 금지는 register_user와 서버가 검사(CHECK에 current_date를 쓰지 않음)"
+        },
+        {
+          "name": "password_hash",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "자체 로그인 비밀번호 해시(scrypt$N$r$p$salt$hash). 외부 로그인 계정은 NULL. 원문 저장 금지"
         }
       ],
       "constraints": [
@@ -5886,6 +5894,16 @@
           "target_table": null,
           "columns": [
             "login_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_password_hash_format_check",
+          "type": "c",
+          "definition": "CHECK (((password_hash IS NULL) OR (password_hash ~~ 'scrypt$%'::text)))",
+          "target_table": null,
+          "columns": [
+            "password_hash"
           ],
           "target_columns": []
         },
@@ -6134,5 +6152,5 @@
     }
   ],
   "table_count": 28,
-  "column_count": 207
+  "column_count": 208
 }

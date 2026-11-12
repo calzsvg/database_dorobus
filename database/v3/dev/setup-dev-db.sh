@@ -54,7 +54,7 @@ fi
 admin -c "CREATE DATABASE $DB_NAME OWNER $OWNER ENCODING 'UTF8' TEMPLATE template0"
 admin -d "$DB_NAME" -c "REVOKE ALL ON DATABASE $DB_NAME FROM PUBLIC; REVOKE CREATE ON SCHEMA public FROM PUBLIC"
 
-files=(sql/001_core.sql sql/002_repair.sql sql/003_license.sql sql/004_license_issuer.sql sql/005_runtime_permissions.sql sql/007_user_birth_date.sql examples/001_content.sql)
+files=(sql/001_core.sql sql/002_repair.sql sql/003_license.sql sql/004_license_issuer.sql sql/005_runtime_permissions.sql sql/007_user_birth_date.sql sql/008_user_password.sql examples/001_content.sql)
 [ "${WITH_INDEX_CANDIDATES:-0}" = "1" ] && files+=(sql/006_index_candidates.sql)
 for f in "${files[@]}"; do
   echo "적용: $f"

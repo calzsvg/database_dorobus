@@ -41,6 +41,13 @@ export async function verifyBirthDate({db, check}) {
     await register('dup-kid', '2015-01-01');
     await rejects(() => register('DUP-KID', '2015-01-01'), '23505', 'users_login_id_key');
   }, true));
+  await check('008 register_local_user: 해시·local 주체 저장, 해시 형식 아니면 거부', () => tx(async () => {
+    const [{id}] = await q("SELECT dorobus.register_local_user('Local-Kid','로컬 학생',DATE '2015-02-02','scrypt$16384$8$1$c2FsdA==$aGFzaA==') id");
+    const [u] = await q('SELECT login_id,auth_subject,password_hash FROM dorobus.users WHERE id=$1', [id]);
+    assert.deepEqual(u, {login_id: 'local-kid', auth_subject: 'local:local-kid', password_hash: 'scrypt$16384$8$1$c2FsdA==$aGFzaA=='});
+    await rejects(() => q("SELECT dorobus.register_local_user('plain-kid','x',DATE '2015-02-02','1234')"), '23514');
+    await rejects(() => q("UPDATE dorobus.users SET password_hash='x' WHERE id=$1", [id]), '42501');
+  }, true));
   await check('나이 뷰는 auth_subject를 노출하지 않음', async () => {
     const cols = (await q("SELECT column_name FROM information_schema.columns WHERE table_schema='dorobus' AND table_name='users_with_age'")).map(r => r.column_name);
     assert(cols.includes('age') && cols.includes('birth_date') && !cols.includes('auth_subject'));
