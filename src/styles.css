@@ -887,3 +887,6 @@ body:has(.pc) .demo-dock { display: none; }
 .minimap.big { width: 100%; height: auto; aspect-ratio: 1; border-radius: 14px; }
 .minimap.big .mm-name { stroke-width: 0.9px; }
 .map-tip { display: block; margin-top: 6px; text-align: center; color: #8a93a6; }
+
+/* 서버에서 계정·진행을 불러오는 동안 */
+.store-loading { display: grid; place-items: center; min-height: 100vh; color: #6b7280; font-size: 18px; background: #f7f9fc; }

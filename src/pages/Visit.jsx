@@ -23,18 +23,23 @@ import { VISIT_REWARD } from '../game/visits.js'
 export default function Visit() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user, progress, setProgress, addCell, otherPlayers, updateFriendGame, visitFriend, track } = useStore()
+  const { user, progress, setProgress, addCell, otherPlayers, playersReady, friendAction, track } = useStore()
 
-  // 방 정보: 같은 브라우저의 다른 계정 또는 예시 방
+  // 방 정보: 다른 계정(서버 DB) 또는 예시 방
   const loadRoom = () => {
     const ex = EXAMPLE_ROOMS.find((r) => r.id === id)
     if (ex) return { ...ex, minigame: { ...ex.minigame } }
     const p = otherPlayers().find((x) => x.id === id)
     if (!p) return null
-    const raw = JSON.parse(localStorage.getItem(`dorobus.data.${id}`) || '{}')
-    return { id, name: p.name, owned: raw.owned || [], minigame: p.progress.minigame }
+    return { id, name: p.name, owned: p.owned || [], minigame: p.progress.minigame }
   }
   const [room, setRoom] = useState(loadRoom)
+  const busy = useRef(false)
+  // 바로 이 주소로 들어오면 친구 목록이 늦게 올 수 있다
+  useEffect(() => {
+    if (!room && playersReady) setRoom(loadRoom())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playersReady])
   const [note, setNote] = useState('')
   const [next, setNext] = useState(null) // 결과 뒤 다음 행동: 'found' | 'out' | 'gone' | null
   const posRef = useRef(new THREE.Vector3(0, 0, 3))
@@ -53,9 +58,9 @@ export default function Visit() {
   useEffect(() => {
     if (!room) return
     track('visit', id, 'unique')
-    if (!room.example && visitFriend(id)) setNote(`방문 인사를 남겼어요. ${room.name}님이 방문 보상 ${VISIT_REWARD} CELL을 받았어요.`)
+    if (!room.example) friendAction(id, 'visit').then((r) => r.ok && setNote(`방문 인사를 남겼어요. ${room.name}님이 방문 보상 ${VISIT_REWARD} CELL을 받았어요.`))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [room?.id])
 
   const { near, nearRef, onMove } = useProximity(spots.map((s) => ({ id: s, pos: SPOT_POS[s], radius: 2.4 })))
 
@@ -68,7 +73,8 @@ export default function Visit() {
     setNext(kind)
   }
 
-  const search = (spot) => {
+  const search = async (spot) => {
+    if (busy.current) return
     if (!hasTreasure) return tell(mg?.foundBy ? `이미 ${mg.foundBy}님이 찾아갔어요. 주인이 다시 숨기면 도전할 수 있어요.` : '이 방에는 아직 숨긴 셀이 없어요.', 'gone')
     if (mine.found) return tell('오늘 이 방의 셀은 이미 찾았어요!', 'found')
     if (triesLeft <= 0) return tell('오늘은 이 방에서 더 살펴볼 수 없어요. 내일 다시 와요!', 'out')
@@ -84,17 +90,22 @@ export default function Visit() {
         saveRaid({ tries, searched, found: true })
         return tell(`💎 찾았다! 하지만 오늘은 이미 ${DAILY_STEALS}번 가져와서 셀은 그대로 두었어요.`, 'out')
       }
+      busy.current = true
+      const res = await friendAction(id, 'found')
+      busy.current = false
+      if (!res.ok) {
+        if (res.minigame) setRoom((r) => ({ ...r, minigame: res.minigame }))
+        return tell('앗, 방금 다른 친구가 먼저 찾아갔어요. 주인이 다시 숨기면 도전할 수 있어요.', 'gone')
+      }
       addCell(mg.stake)
-      const foundAt = new Date().toISOString()
-      updateFriendGame(id, (g) => ({ ...g, foundBy: user.name, foundAt, plays: (g.plays || 0) + 1 }))
-      setRoom((r) => ({ ...r, minigame: { ...r.minigame, foundBy: user.name, foundAt } }))
+      setRoom((r) => ({ ...r, minigame: res.minigame }))
       saveRaid({ tries, searched, found: true }, raids.steals + 1)
       track('steal')
       return tell(`💎 찾았다! ${HIDE_SPOTS[spot].name}에 숨겨진 ${mg.stake} CELL을 가져왔어요!`, 'found')
     }
     saveRaid({ tries, searched })
     if (tries >= VISITOR_TRIES) {
-      if (!room.example) updateFriendGame(id, (g) => ({ ...g, fails: (g.fails || 0) + 1 }))
+      if (!room.example) friendAction(id, 'fail')
       return tell(`💨 ${HIDE_SPOTS[spot].name}에는 없어요. 기회를 다 썼어요! ${room.name}님이 잘 숨겼네요.`, 'out')
     }
     tell(`💨 ${HIDE_SPOTS[spot].name}에는 없어요. 한 번 더 살펴볼 수 있어요.`)
@@ -102,7 +113,7 @@ export default function Visit() {
 
   const like = () => {
     if (liked || !mg) return
-    if (!room.example) updateFriendGame(id, (g) => ({ ...g, likes: (g.likes || 0) + 1, likedBy: [...(g.likedBy || []), user.id] }))
+    if (!room.example) friendAction(id, 'like')
     setRoom((r) => ({ ...r, minigame: { ...r.minigame, likes: (r.minigame.likes || 0) + 1, likedBy: [...(r.minigame.likedBy || []), user.id] } }))
     track('like')
   }

@@ -35,7 +35,7 @@ jobs:
           cp server/void-server.mjs server/void-demo.mjs server/auth.mjs dist/_void/server/
           cp src/accounts.js dist/_void/src/
           cp -r server/prompts dist/_void/server/
-          cp src/game/repairCases.js dist/_void/src/game/
+          cp src/game/repairCases.js src/game/friendOps.js src/game/visits.js dist/_void/src/game/
           echo '{"type":"module"}' > dist/_void/package.json
 
       - name: dist를 deploy 브랜치에 올리기

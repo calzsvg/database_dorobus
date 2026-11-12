@@ -80,10 +80,7 @@ function FriendRooms() {
   const rooms = [
     ...otherPlayers()
       .filter((p) => p.progress.minigame)
-      .map((p) => {
-        const raw = JSON.parse(localStorage.getItem(`dorobus.data.${p.id}`) || '{}')
-        return { id: p.id, name: p.name, owned: raw.owned || [], minigame: p.progress.minigame }
-      }),
+      .map((p) => ({ id: p.id, name: p.name, owned: p.owned || [], minigame: p.progress.minigame })),
     ...EXAMPLE_ROOMS,
   ]
   const go = (r) => navigate(`/visit/${r.id}`)

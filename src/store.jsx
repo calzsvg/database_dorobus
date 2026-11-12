@@ -1,12 +1,11 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { ACCOUNTS, DEMO_STAGES, validateSignup } from './accounts.js'
 import { INITIAL_PROGRESS, STORY_DONE } from './game/progress.js'
-import { MAX_VISIT_LOG, VISIT_REWARD } from './game/visits.js'
+import { applyFriendEvents, applyFriendOp } from './game/friendOps.js'
 import { checkInPatch, dailyOf } from './game/routine.js'
 
 // 2D 화면(대시보드, 상점)과 3D 화면(마이룸)이 같이 쓰는 상태.
-// 계정별 CELL·가구는 브라우저 localStorage에 저장한다.
-// 나중에 DB(Supabase 등)로 옮길 때 이 파일만 바꾸면 된다.
+// 계정별 CELL·가구·진행은 서버 DB(미니PC PostgreSQL)에 저장한다. 브라우저에는 로그인 쿠키만 남는다.
 export const SHOP_ITEMS = [
   { id: 'plant', name: '몬스테라 화분', price: 200, desc: '초록 잎이 무성한 화분', color: '#4CAF6E' },
   { id: 'lamp', name: '스탠드 조명', price: 300, desc: '방을 따뜻하게 밝혀요', color: '#F5B841' },
@@ -21,8 +20,33 @@ export const SHOP_ITEMS = [
   { id: 'bed', name: '침대', price: 600, desc: '하늘색 이불 침대', color: '#7FB4EA' },
 ]
 
+// 서버 API(server/auth.mjs). 로그인 세션은 HttpOnly 쿠키, 게임 상태는 서버 DB에 저장한다.
+// 서버에 DB API가 없을 때(개발 서버에 DB 주소가 없음, API 없는 정적 사이트)만 브라우저 localStorage 체험 모드로 동작한다.
+const DEV = import.meta.env.DEV
+const SAVE_DELAY = 1500 // 마지막 변경 뒤 이만큼 기다렸다가 저장 (ms)
+const SYNC_EVERY = 60_000 // 친구 방문·좋아요 반영과 친구 목록 갱신 주기 (ms)
+
+async function api(path, body = {}, { keepalive = false } = {}) {
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(body),
+      keepalive,
+    })
+    return { status: res.status, body: await res.json().catch(() => ({})) }
+  } catch {
+    return { status: 0, body: {} }
+  }
+}
+// DB API가 아예 없는 서버인가 (이때만 브라우저 체험 모드)
+const noServer = (status) => status === 404 || status === 405 || (DEV && status === 503)
+const OFFLINE = '서버에 연결하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
+
+// ---- 브라우저 체험 모드 전용 (DB 없는 개발 서버) ----
 const SESSION_KEY = 'dorobus.session'
-const SIGNUP_KEY = 'dorobus.accounts' // 회원가입으로 만든 계정 목록 (체험판: 이 브라우저에만 저장)
+const SIGNUP_KEY = 'dorobus.accounts'
 const dataKey = (id) => `dorobus.data.${id}`
 
 const read = (key) => {
@@ -60,88 +84,192 @@ const fromDb = (profile) => {
   const { password: _password, ...game } = ACCOUNTS.find((a) => a.id === profile.id) || { level: 1, cell: 0 }
   return { ...game, ...profile, source: 'db' }
 }
-// 저장된 세션: DB 로그인이면 계정 정보 객체, 브라우저 체험 계정이면 아이디 문자열
-const restoreUser = () => {
-  const saved = read(SESSION_KEY)
-  return saved && typeof saved === 'object' ? fromDb(saved) : findUser(saved)
-}
-
-// 로그인·회원가입 API. DB가 연결되지 않은 서버(503)나 API가 없는 정적 사이트에서는 null → 브라우저 체험 계정으로 처리
-async function callAuth(path, body) {
-  try {
-    const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    if ([403, 404, 405, 503].includes(res.status)) return null
-    return { status: res.status, body: await res.json().catch(() => ({})) }
-  } catch {
-    return null
-  }
-}
 const roleError = (u, role) =>
   u.role === role ? null : u.role === 'student' ? '학생 계정이에요. 학생 탭에서 로그인해 주세요.' : '강사 계정이에요. 강사 탭에서 로그인해 주세요.'
-const loadData = (u) => {
-  const saved = read(dataKey(u.id)) || { cell: u.cell, owned: [], progress: u.preset }
-  return { ...saved, progress: { ...INITIAL_PROGRESS, ...saved.progress } }
-}
+const startState = (u) => ({ cell: u.cell ?? 0, owned: [], progress: u.preset })
+const normalize = (saved) => ({ cell: saved.cell ?? 0, owned: saved.owned ?? [], progress: { ...INITIAL_PROGRESS, ...saved.progress } })
+const loadLocal = (u) => normalize(read(dataKey(u.id)) || startState(u))
 
 const StoreContext = createContext(null)
 
 export function StoreProvider({ children }) {
-  const [user, setUser] = useState(restoreUser)
-  const [data, setData] = useState(() => (user ? loadData(user) : null))
+  const [ready, setReady] = useState(false)
+  const [user, setUser] = useState(null)
+  const [data, setData] = useState(null)
+  const [players, setPlayers] = useState([])
+  const [playersReady, setPlayersReady] = useState(false)
+  const mode = useRef(null) // 'db' | 'local'
+  const seen = useRef(0) // 화면 상태에 이미 반영한 친구 일 번호
+  const dataRef = useRef(null)
+  const pending = useRef(null) // 아직 저장하지 않은 최신 상태
+  const saving = useRef(false)
+  const timer = useRef(null)
+  const skipSave = useRef(false) // 서버에서 막 받은 상태는 다시 저장하지 않는다
+  dataRef.current = data
+
+  const refreshPlayers = async () => {
+    if (mode.current !== 'db') return
+    const r = await api('/api/players')
+    if (r.status === 200) {
+      setPlayers(r.body.players || [])
+      setPlayersReady(true)
+    }
+  }
+
+  // 서버가 준 계정·게임 상태로 시작한다. 서버에 상태가 없으면(첫 로그인) 시작 상태를 만들어 바로 저장한다.
+  // 예전에 이 브라우저에 남아 있던 진행(localStorage)이 있으면 그것을 서버로 한 번 옮기고 브라우저에서는 지운다.
+  const adopt = ({ user: profile, state, seenEvent }) => {
+    const u = fromDb(profile)
+    const legacy = read(dataKey(u.id))
+    mode.current = 'db'
+    seen.current = seenEvent || 0
+    skipSave.current = !!state
+    setUser(u)
+    setData(normalize(state || legacy || startState(u)))
+    remove(dataKey(u.id))
+    remove(SESSION_KEY)
+    setPlayersReady(false)
+    refreshPlayers()
+  }
+
+  // 새로고침: 쿠키 세션이 살아 있으면 서버에서 이어서 불러온다
+  useEffect(() => {
+    let alive = true
+    api('/api/session').then((r) => {
+      if (!alive) return
+      if (r.status === 200) adopt(r.body)
+      else if (noServer(r.status)) {
+        mode.current = 'local'
+        const saved = read(SESSION_KEY)
+        const u = saved && typeof saved === 'object' ? fromDb(saved) : findUser(saved)
+        if (u) {
+          setUser(u)
+          setData(loadLocal(u))
+        }
+        setPlayersReady(true)
+      } else mode.current = 'db'
+      setReady(true)
+    })
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 서버 저장: 한 번에 하나씩, 저장 중에 바뀐 것은 끝난 뒤 이어서 저장한다
+  const flush = async ({ keepalive = false } = {}) => {
+    clearTimeout(timer.current)
+    if (mode.current !== 'db' || saving.current || !pending.current) return
+    const state = pending.current
+    pending.current = null
+    saving.current = true
+    const r = await api('/api/state', { state, seenEvent: seen.current }, { keepalive })
+    saving.current = false
+    if (r.status === 200) {
+      seen.current = r.body.seenEvent ?? seen.current
+      // 친구가 내 방에서 한 일(서버에는 이미 반영됨)을 화면에도 반영한다
+      if (r.body.events?.length) setData((d) => (d ? applyFriendEvents(d, r.body.events) : d))
+    } else if (r.status === 401) {
+      setUser(null)
+      setData(null)
+      return
+    } else pending.current ??= state // 실패: 잠시 뒤 다시 저장
+    if (pending.current) timer.current = setTimeout(flush, r.status === 200 ? SAVE_DELAY : 5000)
+  }
 
   useEffect(() => {
-    if (user && data) write(dataKey(user.id), data)
+    if (!user || !data) return
+    if (mode.current === 'local') return void write(dataKey(user.id), data)
+    if (skipSave.current) {
+      skipSave.current = false
+      return
+    }
+    pending.current = data
+    clearTimeout(timer.current)
+    timer.current = setTimeout(flush, SAVE_DELAY)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, data])
 
-  const start = (u, session) => {
+  // 탭을 닫거나 숨길 때 남은 변경을 바로 보낸다. 1분마다 친구 일 반영·친구 목록 갱신.
+  useEffect(() => {
+    if (!user) return
+    const hide = () => {
+      if (document.visibilityState === 'hidden' && pending.current) flush({ keepalive: JSON.stringify(pending.current).length < 60000 })
+    }
+    const sync = setInterval(() => {
+      if (mode.current !== 'db' || document.visibilityState === 'hidden') return
+      if (!pending.current && dataRef.current) pending.current = dataRef.current
+      flush()
+      refreshPlayers()
+    }, SYNC_EVERY)
+    document.addEventListener('visibilitychange', hide)
+    window.addEventListener('pagehide', hide)
+    return () => {
+      clearInterval(sync)
+      document.removeEventListener('visibilitychange', hide)
+      window.removeEventListener('pagehide', hide)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  const startLocal = (u, session) => {
+    mode.current = 'local'
     setUser(u)
-    setData(loadData(u))
+    setData(loadLocal(u))
     write(SESSION_KEY, session)
   }
 
-  // 로그인: DB가 연결돼 있으면 서버가 DB의 계정·비밀번호로 확인하고, 이름·역할·생년월일은 DB 값을 쓴다.
-  // 성공하면 null, 실패하면 안내 문구를 돌려준다.
+  // 로그인: 서버가 DB의 계정·비밀번호로 확인하고 세션 쿠키를 준다. 성공하면 null, 실패하면 안내 문구.
   const login = async (id, password, role) => {
-    const res = await callAuth('/api/auth/login', { id, password })
-    if (res) {
-      if (res.status !== 200) return res.body.error || '로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
-      const u = fromDb(res.body.user)
-      const err = roleError(u, role)
-      if (err) return err
-      start(u, res.body.user)
+    const r = await api('/api/auth/login', { id, password })
+    if (r.status === 200) {
+      const err = roleError(fromDb(r.body.user), role)
+      if (err) {
+        await api('/api/auth/logout')
+        return err
+      }
+      adopt(r.body)
       return null
     }
-    // DB 미연결: 브라우저 체험 계정
+    if (!noServer(r.status)) return r.status === 0 || r.status >= 500 ? OFFLINE : r.body.error || '로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
+    // DB 없는 개발 서버: 브라우저 체험 계정
     const u = findUser(id.trim().toLowerCase())
     if (!u || u.password !== password) return '아이디 또는 비밀번호가 맞지 않아요.'
     const err = roleError(u, role)
     if (err) return err
-    start(u, u.id)
+    startLocal(u, u.id)
     return null
   }
 
-  // 회원가입: 학생 계정만 만든다(강사 계정은 관리자가 등록). DB가 연결돼 있으면 DB에 저장한다.
+  // 회원가입: 학생 계정만 만든다(강사 계정은 관리자가 등록).
   const signup = async (form) => {
     const checked = validateSignup(form, [])
     if (checked.error) return checked.error
-    const res = await callAuth('/api/auth/signup', form)
-    if (res) {
-      if (res.status !== 200) return res.body.error || '가입하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
-      start(fromDb(res.body.user), res.body.user)
+    const r = await api('/api/auth/signup', form)
+    if (r.status === 200) {
+      adopt(r.body)
       return null
     }
-    // DB 미연결: 이 브라우저에만 저장
+    if (!noServer(r.status)) return r.status === 0 || r.status >= 500 ? OFFLINE : r.body.error || '가입하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
     const { error, account } = validateSignup(form, allAccounts().map((a) => a.id))
     if (error) return error
     write(SIGNUP_KEY, [...signedUpAccounts(), account])
-    start(account, account.id)
+    startLocal(account, account.id)
     return null
   }
 
-  const logout = () => {
-    remove(SESSION_KEY)
+  const logout = async () => {
+    if (mode.current === 'db') {
+      if (pending.current) {
+        clearTimeout(timer.current)
+        await api('/api/state', { state: pending.current, seenEvent: seen.current })
+        pending.current = null
+      }
+      await api('/api/auth/logout')
+    } else remove(SESSION_KEY)
     setUser(null)
     setData(null)
+    setPlayers([])
   }
 
   const buy = (item) => {
@@ -217,36 +345,41 @@ export function StoreProvider({ children }) {
   // 체험용: 메인 스토리를 모두 마친 상태로 바꾼다 (스토리 이후 콘텐츠 확인용)
   const skipStory = () => setData((d) => ({ ...d, progress: { ...d.progress, ...STORY_DONE } }))
 
-  // G · 친구 방 미니게임: 같은 브라우저에서 플레이한 다른 계정의 데이터를 읽고, 플레이 수·좋아요를 남긴다
-  const otherPlayers = () =>
-    allAccounts().filter((a) => a.id !== user?.id)
+  // G · 친구 방: 다른 계정의 이름·가구·보물찾기·순위 기록 (서버 DB, 1분마다 갱신)
+  const otherPlayers = () => {
+    if (mode.current === 'db') return players.map((p) => ({ ...p, progress: { ...INITIAL_PROGRESS, ...p.progress } }))
+    return allAccounts().filter((a) => a.id !== user?.id)
       .map((a) => ({ account: a, data: read(dataKey(a.id)) }))
       .filter((x) => x.data)
-      .map(({ account, data: d }) => ({ id: account.id, name: account.name, progress: { ...INITIAL_PROGRESS, ...d.progress } }))
+      .map(({ account, data: d }) => ({ id: account.id, name: account.name, owned: d.owned || [], progress: { ...INITIAL_PROGRESS, ...d.progress } }))
+  }
 
-  // 친구 방 방문: 방 주인의 저장 데이터에 방문 기록과 CELL을 더한다. 같은 사람은 하루 1번만 보상.
-  const visitFriend = (friendId) => {
-    const d = read(dataKey(friendId))
-    if (!d || !user) return false
-    const p = { ...INITIAL_PROGRESS, ...d.progress }
-    const date = new Date().toISOString().slice(0, 10)
-    if (p.visitors.some((v) => v.fromId === user.id && v.date === date)) return false
-    d.cell = (d.cell ?? 0) + VISIT_REWARD
-    d.progress = {
-      ...d.progress,
-      visitors: [{ fromId: user.id, from: user.name, date }, ...p.visitors].slice(0, MAX_VISIT_LOG),
-      visitIncome: p.visitIncome + VISIT_REWARD,
+  // 친구 방에서 한 일: 'visit'(방문 보상, 같은 사람 하루 1번) · 'found'(숨긴 셀 찾음) · 'fail'(못 찾음) · 'like'
+  // 서버가 방 주인 상태에 반영한다. 이미 된 일이면 { ok: false }.
+  const friendAction = async (friendId, kind) => {
+    if (!user) return { ok: false }
+    if (mode.current === 'db') {
+      const r = await api('/api/friend', { friendId, kind })
+      if (r.status !== 200) return { ok: false }
+      setPlayers((list) => list.map((p) => (p.id === friendId ? { ...p, progress: { ...p.progress, minigame: r.body.minigame } } : p)))
+      return { ok: true, minigame: r.body.minigame }
     }
-    write(dataKey(friendId), d)
-    return true
+    const d = read(dataKey(friendId))
+    if (!d) return { ok: false }
+    const now = new Date()
+    const payload = {
+      visit: { fromId: user.id, from: user.name, date: now.toISOString().slice(0, 10) },
+      found: { by: user.name, at: now.toISOString() },
+      fail: {},
+      like: { userId: user.id },
+    }[kind]
+    const next = applyFriendOp({ ...d, progress: { ...INITIAL_PROGRESS, ...d.progress } }, kind, payload)
+    if (!next) return { ok: false }
+    write(dataKey(friendId), next)
+    return { ok: true, minigame: next.progress.minigame }
   }
 
-  const updateFriendGame = (friendId, change) => {
-    const d = read(dataKey(friendId))
-    if (!d?.progress?.minigame) return
-    d.progress.minigame = change(d.progress.minigame)
-    write(dataKey(friendId), d)
-  }
+  if (!ready) return <div className="store-loading">불러오는 중…</div>
 
   return (
     <StoreContext.Provider
@@ -269,8 +402,9 @@ export function StoreProvider({ children }) {
         replaceProgress,
         skipStory,
         otherPlayers,
-        updateFriendGame,
-        visitFriend,
+        playersReady,
+        refreshPlayers,
+        friendAction,
       }}
     >
       {children}

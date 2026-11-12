@@ -7,13 +7,13 @@
 //   DOROBUS_ORIGINS  API를 부를 수 있는 사이트 주소(쉼표 구분), 기본 https://a1doro.duckdns.org
 //   GEMINI_API_KEY   Gemini 키 (~/.config/dorobus-gemini/env, 권한 600). 없으면 API는 503 → 게임은 규칙만으로 동작
 //   GEMINI_MODEL     선택
-//   DOROBUS_DATABASE_URL  로그인·회원가입용 PostgreSQL 주소(선택). 없으면 /api/auth/*는 503 → 화면은 브라우저 체험 계정으로 동작
+//   DOROBUS_DATABASE_URL  로그인 세션·게임 진행을 저장하는 PostgreSQL 주소(~/.config/dorobus-db/env). 없으면 /api/auth/*, /api/state 등은 503
 import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { homedir } from 'node:os'
 import { voidChat, judgeHypothesis, DEFAULT_MODEL } from './void-demo.mjs'
-import { AUTH_ROUTES, createAuth, readJson } from './auth.mjs'
+import { ROUTES as AUTH_ROUTES, createAuth, serveAuth } from './auth.mjs'
 
 const PORT = Number(process.env.PORT || 8795)
 const DIST = resolve(process.env.DOROBUS_DIST || join(homedir(), 'dorobus', 'dist'))
@@ -61,8 +61,7 @@ async function api(req, res, handler) {
   if (!ORIGINS.includes(req.headers.origin)) return json(res, 403, {})
   if (!API_KEY) return json(res, 503, {})
   if (!req.headers['content-type']?.startsWith('application/json')) return json(res, 415, {})
-  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim()
-  if (!allowed(ip)) return json(res, 429, {})
+  if (!allowed(clientIp(req))) return json(res, 429, {})
   if (inFlight >= 6) return json(res, 429, {})
   inFlight++
   try {
@@ -83,26 +82,22 @@ async function api(req, res, handler) {
   }
 }
 
-// 로그인·회원가입: Gemini 키와 무관하게 DB만 있으면 동작한다
-async function authApi(req, res, action) {
-  if (req.method !== 'POST') return json(res, 405, {})
-  if (!ORIGINS.includes(req.headers.origin)) return json(res, 403, {})
-  if (!AUTH) return json(res, 503, {})
-  if (!req.headers['content-type']?.startsWith('application/json')) return json(res, 415, {})
-  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim()
-  if (!allowed(ip)) return json(res, 429, {})
-  if (inFlight >= 6) return json(res, 429, {})
-  inFlight++
-  try {
-    const input = await readJson(req, 4096)
-    if (!input) return json(res, 413, {})
-    const { status, body } = await AUTH[action](input)
-    return json(res, status, body)
-  } catch {
-    return json(res, 503, {})
-  } finally {
-    inFlight--
-  }
+// 로그인·세션·게임 저장: Gemini 키와 무관하게 DB만 있으면 동작한다.
+// 로그인·회원가입은 접속 주소당 5분에 30번, 저장·친구 방은 세션당 5분에 300번(한 교실이 같은 주소를 써도 막히지 않게).
+const perSession = new Map()
+function allowGame(key) {
+  const now = Date.now()
+  const recent = (perSession.get(key) ?? []).filter(t => now - t < 300_000)
+  if (recent.length >= 300) { perSession.set(key, recent); return false }
+  recent.push(now)
+  perSession.set(key, recent)
+  if (perSession.size > 5000) perSession.clear()
+  return true
+}
+const clientIp = (req) => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim()
+const authOptions = {
+  check: (req) => ORIGINS.includes(req.headers.origin),
+  allow: (req, route, token) => route.by === 'ip' ? allowed(clientIp(req)) : allowGame(token || clientIp(req)),
 }
 
 async function file(req, res) {
@@ -130,7 +125,7 @@ createServer((req, res) => {
   const pathname = (req.url || '/').split('?')[0]
   const handler = ROUTES[pathname]
   if (handler) return void api(req, res, handler)
-  if (AUTH_ROUTES[pathname]) return void authApi(req, res, AUTH_ROUTES[pathname])
+  if (AUTH_ROUTES[pathname]) return void serveAuth(AUTH, pathname, req, res, authOptions)
   return void file(req, res)
 }).listen(PORT, '127.0.0.1', () => {
   console.log(`DOROBUS http://127.0.0.1:${PORT} dist=${DIST} gemini=${API_KEY ? 'on' : 'off'} model=${MODEL} db=${AUTH ? 'on' : 'off'}`)
