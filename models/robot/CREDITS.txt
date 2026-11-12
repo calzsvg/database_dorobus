@@ -1,0 +1,11 @@
+motions.json — 플레이어 로봇 모션
+
+출처: Adobe Mixamo (https://www.mixamo.com), 캐릭터 X Bot, 30fps, 스킨 없이 받은 FBX
+사용한 모션: Happy Idle, Standard Walk, Jogging, Running, Jumping Up, Falling Idle, Falling To Landing,
+            Stand To Sit, Sitting Idle (Sitting Still In A Chair), Waving
+라이선스: Mixamo 이용 약관에 따라 프로젝트(게임, 웹 앱) 안에서는 무료로 쓸 수 있다.
+          원본 캐릭터·모션 파일을 따로 배포하는 것은 안 되므로 FBX 원본은 저장소에 넣지 않는다.
+
+다시 만들기: Mixamo에서 같은 설정(FBX Binary, Without Skin, 30fps, 걷기·조깅·달리기는 In Place)으로 받아
+            파일 이름을 idle, walk, jog, run, jump_up, fall, land, stand_to_sit, sit_idle, wave 로 바꾼 뒤
+            node scripts/mixamo-to-json.mjs <FBX 폴더> public/models/robot/motions.json
