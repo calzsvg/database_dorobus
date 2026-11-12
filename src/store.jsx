@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { ACCOUNTS, DEMO_STAGES } from './accounts.js'
+import { ACCOUNTS, DEMO_STAGES, validateSignup } from './accounts.js'
 import { INITIAL_PROGRESS, STORY_DONE } from './game/progress.js'
 import { MAX_VISIT_LOG, VISIT_REWARD } from './game/visits.js'
 import { checkInPatch, dailyOf } from './game/routine.js'
@@ -22,6 +22,7 @@ export const SHOP_ITEMS = [
 ]
 
 const SESSION_KEY = 'dorobus.session'
+const SIGNUP_KEY = 'dorobus.accounts' // 회원가입으로 만든 계정 목록 (체험판: 이 브라우저에만 저장)
 const dataKey = (id) => `dorobus.data.${id}`
 
 const read = (key) => {
@@ -46,7 +47,37 @@ const remove = (key) => {
   }
 }
 
-const findUser = (id) => ACCOUNTS.find((a) => a.id === id) || null
+const signedUpAccounts = () => {
+  const list = read(SIGNUP_KEY)
+  return Array.isArray(list) ? list : []
+}
+const allAccounts = () => [...ACCOUNTS, ...signedUpAccounts()]
+const findUser = (id) => allAccounts().find((a) => a.id === id) || null
+
+// DB에서 받은 계정 정보(아이디·이름·역할·생년월일·나이)에 게임 설정(level·cell·preset)만 덧붙인다.
+// accounts.js에 없는 계정(회원가입)은 기본값을 쓴다. 비밀번호는 화면 상태에 두지 않는다.
+const fromDb = (profile) => {
+  const { password: _password, ...game } = ACCOUNTS.find((a) => a.id === profile.id) || { level: 1, cell: 0 }
+  return { ...game, ...profile, source: 'db' }
+}
+// 저장된 세션: DB 로그인이면 계정 정보 객체, 브라우저 체험 계정이면 아이디 문자열
+const restoreUser = () => {
+  const saved = read(SESSION_KEY)
+  return saved && typeof saved === 'object' ? fromDb(saved) : findUser(saved)
+}
+
+// 로그인·회원가입 API. DB가 연결되지 않은 서버(503)나 API가 없는 정적 사이트에서는 null → 브라우저 체험 계정으로 처리
+async function callAuth(path, body) {
+  try {
+    const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    if ([403, 404, 405, 503].includes(res.status)) return null
+    return { status: res.status, body: await res.json().catch(() => ({})) }
+  } catch {
+    return null
+  }
+}
+const roleError = (u, role) =>
+  u.role === role ? null : u.role === 'student' ? '학생 계정이에요. 학생 탭에서 로그인해 주세요.' : '강사 계정이에요. 강사 탭에서 로그인해 주세요.'
 const loadData = (u) => {
   const saved = read(dataKey(u.id)) || { cell: u.cell, owned: [], progress: u.preset }
   return { ...saved, progress: { ...INITIAL_PROGRESS, ...saved.progress } }
@@ -55,22 +86,55 @@ const loadData = (u) => {
 const StoreContext = createContext(null)
 
 export function StoreProvider({ children }) {
-  const [user, setUser] = useState(() => findUser(read(SESSION_KEY)))
+  const [user, setUser] = useState(restoreUser)
   const [data, setData] = useState(() => (user ? loadData(user) : null))
 
   useEffect(() => {
     if (user && data) write(dataKey(user.id), data)
   }, [user, data])
 
-  const login = (id, password, role) => {
-    const u = findUser(id.trim())
-    if (!u || u.password !== password) return '아이디 또는 비밀번호가 맞지 않아요.'
-    if (u.role !== role) {
-      return u.role === 'student' ? '학생 계정이에요. 학생 탭에서 로그인해 주세요.' : '강사 계정이에요. 강사 탭에서 로그인해 주세요.'
-    }
+  const start = (u, session) => {
     setUser(u)
     setData(loadData(u))
-    write(SESSION_KEY, u.id)
+    write(SESSION_KEY, session)
+  }
+
+  // 로그인: DB가 연결돼 있으면 서버가 DB의 계정·비밀번호로 확인하고, 이름·역할·생년월일은 DB 값을 쓴다.
+  // 성공하면 null, 실패하면 안내 문구를 돌려준다.
+  const login = async (id, password, role) => {
+    const res = await callAuth('/api/auth/login', { id, password })
+    if (res) {
+      if (res.status !== 200) return res.body.error || '로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
+      const u = fromDb(res.body.user)
+      const err = roleError(u, role)
+      if (err) return err
+      start(u, res.body.user)
+      return null
+    }
+    // DB 미연결: 브라우저 체험 계정
+    const u = findUser(id.trim().toLowerCase())
+    if (!u || u.password !== password) return '아이디 또는 비밀번호가 맞지 않아요.'
+    const err = roleError(u, role)
+    if (err) return err
+    start(u, u.id)
+    return null
+  }
+
+  // 회원가입: 학생 계정만 만든다(강사 계정은 관리자가 등록). DB가 연결돼 있으면 DB에 저장한다.
+  const signup = async (form) => {
+    const checked = validateSignup(form, [])
+    if (checked.error) return checked.error
+    const res = await callAuth('/api/auth/signup', form)
+    if (res) {
+      if (res.status !== 200) return res.body.error || '가입하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
+      start(fromDb(res.body.user), res.body.user)
+      return null
+    }
+    // DB 미연결: 이 브라우저에만 저장
+    const { error, account } = validateSignup(form, allAccounts().map((a) => a.id))
+    if (error) return error
+    write(SIGNUP_KEY, [...signedUpAccounts(), account])
+    start(account, account.id)
     return null
   }
 
@@ -155,7 +219,7 @@ export function StoreProvider({ children }) {
 
   // G · 친구 방 미니게임: 같은 브라우저에서 플레이한 다른 계정의 데이터를 읽고, 플레이 수·좋아요를 남긴다
   const otherPlayers = () =>
-    ACCOUNTS.filter((a) => a.id !== user?.id)
+    allAccounts().filter((a) => a.id !== user?.id)
       .map((a) => ({ account: a, data: read(dataKey(a.id)) }))
       .filter((x) => x.data)
       .map(({ account, data: d }) => ({ id: account.id, name: account.name, progress: { ...INITIAL_PROGRESS, ...d.progress } }))
@@ -193,6 +257,7 @@ export function StoreProvider({ children }) {
         progress: data?.progress ?? INITIAL_PROGRESS,
         buy,
         login,
+        signup,
         logout,
         setProgress,
         addCell,

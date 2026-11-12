@@ -1,0 +1,6156 @@
+{
+  "tables": [
+    {
+      "name": "assignments",
+      "description": "과제 배정",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "과제 배정 고유 번호"
+        },
+        {
+          "name": "class_group_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "과제를 받은 반"
+        },
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "출제한 문제의 정확한 버전"
+        },
+        {
+          "name": "assigned_on",
+          "type": "date",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "과제 출제일. 현재 ASSIGN의 날짜에 대응"
+        },
+        {
+          "name": "due_at",
+          "type": "timestamp with time zone",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "마감 시각. 마감이 없으면 비워 둠"
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": "0",
+          "description": "과제 목록 표시 순서. 작은 숫자를 먼저 표시"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "assignments_due_after_assigned_check",
+          "type": "c",
+          "definition": "CHECK (((due_at IS NULL) OR (due_at >= ((assigned_on)::timestamp without time zone AT TIME ZONE 'Asia/Seoul'::text))))",
+          "target_table": null,
+          "columns": [
+            "due_at",
+            "assigned_on"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "assignments_sort_order_nonnegative_check",
+          "type": "c",
+          "definition": "CHECK ((sort_order >= 0))",
+          "target_table": null,
+          "columns": [
+            "sort_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "assignments_class_group_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (class_group_id) REFERENCES dorobus.class_groups(id) ON DELETE RESTRICT",
+          "target_table": "class_groups",
+          "columns": [
+            "class_group_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "assignments_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id) REFERENCES dorobus.content_versions(id) ON DELETE RESTRICT",
+          "target_table": "content_versions",
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "assignments_assigned_on_not_null",
+          "type": "n",
+          "definition": "NOT NULL assigned_on",
+          "target_table": null,
+          "columns": [
+            "assigned_on"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "assignments_class_group_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL class_group_id",
+          "target_table": null,
+          "columns": [
+            "class_group_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "assignments_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "assignments_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "assignments_sort_order_not_null",
+          "type": "n",
+          "definition": "NOT NULL sort_order",
+          "target_table": null,
+          "columns": [
+            "sort_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "assignments_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "assignments_class_content_date_key",
+          "type": "u",
+          "definition": "UNIQUE (class_group_id, content_version_id, assigned_on)",
+          "target_table": null,
+          "columns": [
+            "class_group_id",
+            "content_version_id",
+            "assigned_on"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "assignments_id_version_key",
+          "type": "u",
+          "definition": "UNIQUE (id, content_version_id)",
+          "target_table": null,
+          "columns": [
+            "id",
+            "content_version_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "assignments_class_content_date_key",
+          "definition": "CREATE UNIQUE INDEX assignments_class_content_date_key ON dorobus.assignments USING btree (class_group_id, content_version_id, assigned_on)"
+        },
+        {
+          "name": "assignments_class_date_idx",
+          "definition": "CREATE INDEX assignments_class_date_idx ON dorobus.assignments USING btree (class_group_id, assigned_on)"
+        },
+        {
+          "name": "assignments_id_version_key",
+          "definition": "CREATE UNIQUE INDEX assignments_id_version_key ON dorobus.assignments USING btree (id, content_version_id)"
+        },
+        {
+          "name": "assignments_pkey",
+          "definition": "CREATE UNIQUE INDEX assignments_pkey ON dorobus.assignments USING btree (id)"
+        }
+      ]
+    },
+    {
+      "name": "cell_transactions",
+      "description": "CELL 거래 내역",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "거래 내역 고유 번호"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "잔액이 바뀐 사용자"
+        },
+        {
+          "name": "amount",
+          "type": "bigint",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "CELL 증감량. 보상 +50, 가구 구매 -200"
+        },
+        {
+          "name": "reason",
+          "type": "character varying(50)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "발생 사유 코드. 예: content_reward, item_purchase, migration_opening"
+        },
+        {
+          "name": "operation_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "서버가 처리하는 업무 한 건의 식별자. 같은 요청 재처리 시 재사용"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "거래를 기록한 시각"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "cell_transactions_amount_nonzero_check",
+          "type": "c",
+          "definition": "CHECK ((amount <> 0))",
+          "target_table": null,
+          "columns": [
+            "amount"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "cell_transactions_reason_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((reason)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "reason"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "cell_transactions_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cell_transactions_amount_not_null",
+          "type": "n",
+          "definition": "NOT NULL amount",
+          "target_table": null,
+          "columns": [
+            "amount"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "cell_transactions_created_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL created_at",
+          "target_table": null,
+          "columns": [
+            "created_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "cell_transactions_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "cell_transactions_operation_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL operation_id",
+          "target_table": null,
+          "columns": [
+            "operation_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "cell_transactions_reason_not_null",
+          "type": "n",
+          "definition": "NOT NULL reason",
+          "target_table": null,
+          "columns": [
+            "reason"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "cell_transactions_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "cell_transactions_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "cell_transactions_user_operation_key",
+          "type": "u",
+          "definition": "UNIQUE (user_id, operation_id)",
+          "target_table": null,
+          "columns": [
+            "user_id",
+            "operation_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "cell_transactions_pkey",
+          "definition": "CREATE UNIQUE INDEX cell_transactions_pkey ON dorobus.cell_transactions USING btree (id)"
+        },
+        {
+          "name": "cell_transactions_user_created_idx",
+          "definition": "CREATE INDEX cell_transactions_user_created_idx ON dorobus.cell_transactions USING btree (user_id, created_at)"
+        },
+        {
+          "name": "cell_transactions_user_operation_key",
+          "definition": "CREATE UNIQUE INDEX cell_transactions_user_operation_key ON dorobus.cell_transactions USING btree (user_id, operation_id)"
+        }
+      ]
+    },
+    {
+      "name": "class_groups",
+      "description": "개설 반",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "반 고유 번호"
+        },
+        {
+          "name": "course_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "이 반이 사용하는 교육 과정"
+        },
+        {
+          "name": "teacher_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "담당 강사의 사용자 번호"
+        },
+        {
+          "name": "name",
+          "type": "character varying(100)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "반 이름. 예: K-POP 월요일 A반"
+        },
+        {
+          "name": "starts_on",
+          "type": "date",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "수업 운영 시작일"
+        },
+        {
+          "name": "ends_on",
+          "type": "date",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "운영 종료일. 미정이면 비워 둠"
+        },
+        {
+          "name": "status",
+          "type": "character varying(20)",
+          "not_null": true,
+          "generated": "",
+          "default_value": "'planned'::character varying",
+          "description": "planned 준비 중 / active 운영 중 / completed 종료 / cancelled 취소"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "class_groups_date_order_check",
+          "type": "c",
+          "definition": "CHECK (((ends_on IS NULL) OR (ends_on >= starts_on)))",
+          "target_table": null,
+          "columns": [
+            "ends_on",
+            "starts_on"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "class_groups_name_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((name)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "class_groups_status_allowed_check",
+          "type": "c",
+          "definition": "CHECK (((status)::text = ANY ((ARRAY['planned'::character varying, 'active'::character varying, 'completed'::character varying, 'cancelled'::character varying])::text[])))",
+          "target_table": null,
+          "columns": [
+            "status"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "class_groups_course_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (course_id) REFERENCES dorobus.courses(id) ON DELETE RESTRICT",
+          "target_table": "courses",
+          "columns": [
+            "course_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "class_groups_teacher_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (teacher_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "teacher_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "class_groups_course_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL course_id",
+          "target_table": null,
+          "columns": [
+            "course_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "class_groups_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "class_groups_name_not_null",
+          "type": "n",
+          "definition": "NOT NULL name",
+          "target_table": null,
+          "columns": [
+            "name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "class_groups_starts_on_not_null",
+          "type": "n",
+          "definition": "NOT NULL starts_on",
+          "target_table": null,
+          "columns": [
+            "starts_on"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "class_groups_status_not_null",
+          "type": "n",
+          "definition": "NOT NULL status",
+          "target_table": null,
+          "columns": [
+            "status"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "class_groups_teacher_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL teacher_id",
+          "target_table": null,
+          "columns": [
+            "teacher_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "class_groups_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "class_groups_pkey",
+          "definition": "CREATE UNIQUE INDEX class_groups_pkey ON dorobus.class_groups USING btree (id)"
+        },
+        {
+          "name": "class_groups_teacher_status_idx",
+          "definition": "CREATE INDEX class_groups_teacher_status_idx ON dorobus.class_groups USING btree (teacher_id, status)"
+        }
+      ]
+    },
+    {
+      "name": "content_completions",
+      "description": "문제 완료",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "문제를 완료한 사용자"
+        },
+        {
+          "name": "content_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "완료한 문제. 수업별이 아닌 문제 자체를 가리킴"
+        },
+        {
+          "name": "completed_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "최초 완료할 때 풀었던 문제 버전"
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "최초 완료를 확정한 시각"
+        },
+        {
+          "name": "source_repair_run_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "수리 최초 완료는 본인의 같은 콘텐츠·버전 completed 도전 필수. 비수리 완료는 NULL. 재도전으로 덮어쓰지 않음"
+        },
+        {
+          "name": "content_kind",
+          "type": "character varying(30)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "필수 콘텐츠 종류. contents(id,kind) 복합 FK로 실제 정의와 일치. 수리는 완료 도전 필수, 비수리는 도전 없이 기록"
+        },
+        {
+          "name": "source_phase",
+          "type": "text",
+          "not_null": false,
+          "generated": "s",
+          "default_value": "\nCASE\n    WHEN (source_repair_run_id IS NOT NULL) THEN 'completed'::text\n    ELSE NULL::text\nEND",
+          "description": "도전이 있으면 자동 completed. 수리는 별도 종류 FK·NOT NULL·CHECK가 NULL 도전 우회를 차단하며 강한 FK가 소유자·콘텐츠·버전·상태를 검증"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "completion_repair_source_required",
+          "type": "c",
+          "definition": "CHECK ((((content_kind)::text = 'repair_case'::text) = (source_repair_run_id IS NOT NULL)))",
+          "target_table": null,
+          "columns": [
+            "content_kind",
+            "source_repair_run_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "completion_content_kind_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_id, content_kind) REFERENCES dorobus.contents(id, kind)",
+          "target_table": "contents",
+          "columns": [
+            "content_id",
+            "content_kind"
+          ],
+          "target_columns": [
+            "id",
+            "kind"
+          ]
+        },
+        {
+          "name": "completion_must_be_finished_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (source_repair_run_id, user_id, content_id, completed_version_id, source_phase) REFERENCES dorobus.repair_runs(id, user_id, content_id, content_version_id, phase)",
+          "target_table": "repair_runs",
+          "columns": [
+            "source_repair_run_id",
+            "user_id",
+            "content_id",
+            "completed_version_id",
+            "source_phase"
+          ],
+          "target_columns": [
+            "id",
+            "user_id",
+            "content_id",
+            "content_version_id",
+            "phase"
+          ]
+        },
+        {
+          "name": "content_completions_content_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_id) REFERENCES dorobus.contents(id) ON DELETE RESTRICT",
+          "target_table": "contents",
+          "columns": [
+            "content_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "content_completions_content_version_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_id, completed_version_id) REFERENCES dorobus.content_versions(content_id, id) ON DELETE RESTRICT",
+          "target_table": "content_versions",
+          "columns": [
+            "content_id",
+            "completed_version_id"
+          ],
+          "target_columns": [
+            "content_id",
+            "id"
+          ]
+        },
+        {
+          "name": "content_completions_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "content_completions_completed_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL completed_at",
+          "target_table": null,
+          "columns": [
+            "completed_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_completions_completed_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL completed_version_id",
+          "target_table": null,
+          "columns": [
+            "completed_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_completions_content_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_id",
+          "target_table": null,
+          "columns": [
+            "content_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_completions_content_kind_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_kind",
+          "target_table": null,
+          "columns": [
+            "content_kind"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_completions_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_completions_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (user_id, content_id)",
+          "target_table": null,
+          "columns": [
+            "user_id",
+            "content_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "content_completions_pkey",
+          "definition": "CREATE UNIQUE INDEX content_completions_pkey ON dorobus.content_completions USING btree (user_id, content_id)"
+        }
+      ]
+    },
+    {
+      "name": "content_versions",
+      "description": "문제 버전",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "특정 문제 버전의 고유 번호"
+        },
+        {
+          "name": "content_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "원래 어떤 문제의 버전인지"
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "버전 번호. 첫 버전은 1. 같은 문제 안에서 순서대로 부여"
+        },
+        {
+          "name": "title",
+          "type": "character varying(200)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "해당 버전의 문제 제목"
+        },
+        {
+          "name": "public_body",
+          "type": "jsonb",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "학생에게 보여 줄 질문·보기·단계·공개 힌트"
+        },
+        {
+          "name": "grading_rule",
+          "type": "jsonb",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "서버가 채점할 정답·정답 순서·판정 규칙. 공개 응답에서 제외"
+        },
+        {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "공개 시각. NULL이면 작성 중인 버전"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "content_versions_grading_rule_object_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(grading_rule) = 'object'::text))",
+          "target_table": null,
+          "columns": [
+            "grading_rule"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_public_body_object_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(public_body) = 'object'::text))",
+          "target_table": null,
+          "columns": [
+            "public_body"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_title_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((title)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_version_positive_check",
+          "type": "c",
+          "definition": "CHECK ((version >= 1))",
+          "target_table": null,
+          "columns": [
+            "version"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_content_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_id) REFERENCES dorobus.contents(id) ON DELETE RESTRICT",
+          "target_table": "contents",
+          "columns": [
+            "content_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "content_versions_content_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_id",
+          "target_table": null,
+          "columns": [
+            "content_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_grading_rule_not_null",
+          "type": "n",
+          "definition": "NOT NULL grading_rule",
+          "target_table": null,
+          "columns": [
+            "grading_rule"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_public_body_not_null",
+          "type": "n",
+          "definition": "NOT NULL public_body",
+          "target_table": null,
+          "columns": [
+            "public_body"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_title_not_null",
+          "type": "n",
+          "definition": "NOT NULL title",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_version_not_null",
+          "type": "n",
+          "definition": "NOT NULL version",
+          "target_table": null,
+          "columns": [
+            "version"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_content_id_id_key",
+          "type": "u",
+          "definition": "UNIQUE (content_id, id)",
+          "target_table": null,
+          "columns": [
+            "content_id",
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "content_versions_content_version_key",
+          "type": "u",
+          "definition": "UNIQUE (content_id, version)",
+          "target_table": null,
+          "columns": [
+            "content_id",
+            "version"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "content_versions_content_id_id_key",
+          "definition": "CREATE UNIQUE INDEX content_versions_content_id_id_key ON dorobus.content_versions USING btree (content_id, id)"
+        },
+        {
+          "name": "content_versions_content_version_key",
+          "definition": "CREATE UNIQUE INDEX content_versions_content_version_key ON dorobus.content_versions USING btree (content_id, version)"
+        },
+        {
+          "name": "content_versions_pkey",
+          "definition": "CREATE UNIQUE INDEX content_versions_pkey ON dorobus.content_versions USING btree (id)"
+        }
+      ]
+    },
+    {
+      "name": "contents",
+      "description": "문제·학습 활동",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "문제·활동 고유 번호"
+        },
+        {
+          "name": "code",
+          "type": "character varying(100)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "코드상의 고정 식별자. 예: q-sensor, w-condition"
+        },
+        {
+          "name": "kind",
+          "type": "character varying(30)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "quiz / world(독립 월드 문제) / homework / coding_challenge / repair_case. 본편 스토리 유형 제외"
+        },
+        {
+          "name": "concept",
+          "type": "character varying(30)",
+          "not_null": false,
+          "generated": "",
+          "default_value": "NULL::character varying",
+          "description": "학습 개념. 예: sensor 센서, condition 조건. 해당 없으면 비워 둠"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "not_null": true,
+          "generated": "",
+          "default_value": "true",
+          "description": "새 출제에 사용할 수 있는 활동인지"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "contents_code_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((code)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "contents_concept_allowed_check",
+          "type": "c",
+          "definition": "CHECK (((concept IS NULL) OR ((concept)::text = ANY ((ARRAY['sequence'::character varying, 'condition'::character varying, 'loop'::character varying, 'variable'::character varying, 'sensor'::character varying, 'data'::character varying, 'ai'::character varying, 'sort'::character varying, 'weight'::character varying, 'slope'::character varying, 'balance'::character varying, 'friction'::character varying, 'connection'::character varying, 'integration'::character varying])::text[]))))",
+          "target_table": null,
+          "columns": [
+            "concept"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "contents_kind_allowed_check",
+          "type": "c",
+          "definition": "CHECK (((kind)::text = ANY ((ARRAY['quiz'::character varying, 'world'::character varying, 'homework'::character varying, 'coding_challenge'::character varying, 'repair_case'::character varying])::text[])))",
+          "target_table": null,
+          "columns": [
+            "kind"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "contents_code_not_null",
+          "type": "n",
+          "definition": "NOT NULL code",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "contents_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "contents_is_active_not_null",
+          "type": "n",
+          "definition": "NOT NULL is_active",
+          "target_table": null,
+          "columns": [
+            "is_active"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "contents_kind_not_null",
+          "type": "n",
+          "definition": "NOT NULL kind",
+          "target_table": null,
+          "columns": [
+            "kind"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "contents_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "contents_code_key",
+          "type": "u",
+          "definition": "UNIQUE (code)",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "contents_id_kind_key",
+          "type": "u",
+          "definition": "UNIQUE (id, kind)",
+          "target_table": null,
+          "columns": [
+            "id",
+            "kind"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "contents_code_key",
+          "definition": "CREATE UNIQUE INDEX contents_code_key ON dorobus.contents USING btree (code)"
+        },
+        {
+          "name": "contents_id_kind_key",
+          "definition": "CREATE UNIQUE INDEX contents_id_kind_key ON dorobus.contents USING btree (id, kind)"
+        },
+        {
+          "name": "contents_pkey",
+          "definition": "CREATE UNIQUE INDEX contents_pkey ON dorobus.contents USING btree (id)"
+        }
+      ]
+    },
+    {
+      "name": "courses",
+      "description": "교육 과정",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "교육 과정 고유 번호"
+        },
+        {
+          "name": "code",
+          "type": "character varying(50)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "코드에서 사용하는 고정 이름. 예: l1"
+        },
+        {
+          "name": "title",
+          "type": "character varying(200)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "과정명. 예: AI K-POP 프로듀싱 작전"
+        },
+        {
+          "name": "track",
+          "type": "character varying(20)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "과정 계열. spark 또는 awake"
+        },
+        {
+          "name": "level",
+          "type": "smallint",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "현재 프로그램의 교육 레벨. 1~8"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "과정의 자세한 소개"
+        },
+        {
+          "name": "display_meta",
+          "type": "jsonb",
+          "not_null": true,
+          "generated": "",
+          "default_value": "'{}'::jsonb",
+          "description": "과정 소개용 아이콘·미션 문구·도구·키트·결과물 안내 묶음"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "not_null": true,
+          "generated": "",
+          "default_value": "true",
+          "description": "새로 제공할 수 있는 과정인지. false라도 과거 기록은 유지"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "courses_code_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((code)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_display_meta_object_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(display_meta) = 'object'::text))",
+          "target_table": null,
+          "columns": [
+            "display_meta"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_level_range_check",
+          "type": "c",
+          "definition": "CHECK (((level >= 1) AND (level <= 8)))",
+          "target_table": null,
+          "columns": [
+            "level"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_title_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((title)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_track_allowed_check",
+          "type": "c",
+          "definition": "CHECK (((track)::text = ANY ((ARRAY['spark'::character varying, 'awake'::character varying])::text[])))",
+          "target_table": null,
+          "columns": [
+            "track"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_code_not_null",
+          "type": "n",
+          "definition": "NOT NULL code",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_display_meta_not_null",
+          "type": "n",
+          "definition": "NOT NULL display_meta",
+          "target_table": null,
+          "columns": [
+            "display_meta"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_is_active_not_null",
+          "type": "n",
+          "definition": "NOT NULL is_active",
+          "target_table": null,
+          "columns": [
+            "is_active"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_level_not_null",
+          "type": "n",
+          "definition": "NOT NULL level",
+          "target_table": null,
+          "columns": [
+            "level"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_title_not_null",
+          "type": "n",
+          "definition": "NOT NULL title",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_track_not_null",
+          "type": "n",
+          "definition": "NOT NULL track",
+          "target_table": null,
+          "columns": [
+            "track"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "courses_code_key",
+          "type": "u",
+          "definition": "UNIQUE (code)",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "courses_code_key",
+          "definition": "CREATE UNIQUE INDEX courses_code_key ON dorobus.courses USING btree (code)"
+        },
+        {
+          "name": "courses_pkey",
+          "definition": "CREATE UNIQUE INDEX courses_pkey ON dorobus.courses USING btree (id)"
+        }
+      ]
+    },
+    {
+      "name": "driving_licenses",
+      "description": "자동차 도입 수리 완료로 발급하는 게임 운전면허. 퍼레이드의 원격수리 자격과 별개",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "면허 소유 사용자. 한 사람당 하나"
+        },
+        {
+          "name": "source_run_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "면허를 발급한 본인의 완료된 도입 사건. 복합 FK가 소유자·유형·완료 상태를 검사"
+        },
+        {
+          "name": "source_case_role",
+          "type": "text",
+          "not_null": false,
+          "generated": "s",
+          "default_value": "'onboarding'::text",
+          "description": "자동 계산 onboarding. 임의 다른 사건으로 면허 발급 불가"
+        },
+        {
+          "name": "source_phase",
+          "type": "text",
+          "not_null": false,
+          "generated": "s",
+          "default_value": "'completed'::text",
+          "description": "자동 계산 completed. 미완료 자동차로 면허 발급 불가"
+        },
+        {
+          "name": "issued_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "서버가 확정한 자동차 완료 시각"
+        },
+        {
+          "name": "request_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "최초 발급 요청. 재전송/재도전에서 면허를 중복 발급하지 않음"
+        },
+        {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "면허 행을 등록한 시각"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "driving_licenses_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "license_verified_run_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (source_run_id, user_id, source_case_role, source_phase) REFERENCES dorobus.repair_runs(id, user_id, case_role, phase) ON DELETE RESTRICT",
+          "target_table": "repair_runs",
+          "columns": [
+            "source_run_id",
+            "user_id",
+            "source_case_role",
+            "source_phase"
+          ],
+          "target_columns": [
+            "id",
+            "user_id",
+            "case_role",
+            "phase"
+          ]
+        },
+        {
+          "name": "driving_licenses_issued_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL issued_at",
+          "target_table": null,
+          "columns": [
+            "issued_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "driving_licenses_recorded_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL recorded_at",
+          "target_table": null,
+          "columns": [
+            "recorded_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "driving_licenses_request_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL request_id",
+          "target_table": null,
+          "columns": [
+            "request_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "driving_licenses_source_run_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL source_run_id",
+          "target_table": null,
+          "columns": [
+            "source_run_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "driving_licenses_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "driving_licenses_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (user_id)",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "driving_licenses_request_id_key",
+          "type": "u",
+          "definition": "UNIQUE (request_id)",
+          "target_table": null,
+          "columns": [
+            "request_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "driving_licenses_source_run_id_key",
+          "type": "u",
+          "definition": "UNIQUE (source_run_id)",
+          "target_table": null,
+          "columns": [
+            "source_run_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "driving_licenses_pkey",
+          "definition": "CREATE UNIQUE INDEX driving_licenses_pkey ON dorobus.driving_licenses USING btree (user_id)"
+        },
+        {
+          "name": "driving_licenses_request_id_key",
+          "definition": "CREATE UNIQUE INDEX driving_licenses_request_id_key ON dorobus.driving_licenses USING btree (request_id)"
+        },
+        {
+          "name": "driving_licenses_source_run_id_key",
+          "definition": "CREATE UNIQUE INDEX driving_licenses_source_run_id_key ON dorobus.driving_licenses USING btree (source_run_id)"
+        }
+      ]
+    },
+    {
+      "name": "enrollments",
+      "description": "수강 기록",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "수강 기록 고유 번호"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "수강하는 학생"
+        },
+        {
+          "name": "class_group_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "수강하는 반"
+        },
+        {
+          "name": "status",
+          "type": "character varying(20)",
+          "not_null": true,
+          "generated": "",
+          "default_value": "'active'::character varying",
+          "description": "active 수강 중 / completed 수료 / withdrawn 중도 취소"
+        },
+        {
+          "name": "enrolled_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "수강 등록 시각"
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "수료 시각. 수강 중·중도 취소이면 비워 둠"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "enrollments_completion_state_check",
+          "type": "c",
+          "definition": "CHECK (((((status)::text = 'completed'::text) AND (completed_at IS NOT NULL) AND (completed_at >= enrolled_at)) OR (((status)::text <> 'completed'::text) AND (completed_at IS NULL))))",
+          "target_table": null,
+          "columns": [
+            "status",
+            "completed_at",
+            "enrolled_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "enrollments_status_allowed_check",
+          "type": "c",
+          "definition": "CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'completed'::character varying, 'withdrawn'::character varying])::text[])))",
+          "target_table": null,
+          "columns": [
+            "status"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "enrollments_class_group_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (class_group_id) REFERENCES dorobus.class_groups(id) ON DELETE RESTRICT",
+          "target_table": "class_groups",
+          "columns": [
+            "class_group_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "enrollments_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "enrollments_class_group_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL class_group_id",
+          "target_table": null,
+          "columns": [
+            "class_group_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "enrollments_enrolled_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL enrolled_at",
+          "target_table": null,
+          "columns": [
+            "enrolled_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "enrollments_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "enrollments_status_not_null",
+          "type": "n",
+          "definition": "NOT NULL status",
+          "target_table": null,
+          "columns": [
+            "status"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "enrollments_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "enrollments_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "enrollments_user_class_key",
+          "type": "u",
+          "definition": "UNIQUE (user_id, class_group_id)",
+          "target_table": null,
+          "columns": [
+            "user_id",
+            "class_group_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "enrollments_class_status_idx",
+          "definition": "CREATE INDEX enrollments_class_status_idx ON dorobus.enrollments USING btree (class_group_id, status)"
+        },
+        {
+          "name": "enrollments_pkey",
+          "definition": "CREATE UNIQUE INDEX enrollments_pkey ON dorobus.enrollments USING btree (id)"
+        },
+        {
+          "name": "enrollments_user_class_key",
+          "definition": "CREATE UNIQUE INDEX enrollments_user_class_key ON dorobus.enrollments USING btree (user_id, class_group_id)"
+        }
+      ]
+    },
+    {
+      "name": "items",
+      "description": "상점 가구",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "가구 종류 고유 번호"
+        },
+        {
+          "name": "code",
+          "type": "character varying(50)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "기존 화면·3D 모델과 연결할 고정 이름. 예: plant"
+        },
+        {
+          "name": "name",
+          "type": "character varying(100)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "상품 이름. 예: 몬스테라 화분"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "상품 소개 문구"
+        },
+        {
+          "name": "price_cell",
+          "type": "bigint",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "현재 판매 가격. 예: 200"
+        },
+        {
+          "name": "display_meta",
+          "type": "jsonb",
+          "not_null": true,
+          "generated": "",
+          "default_value": "'{}'::jsonb",
+          "description": "표시 색상·아이콘·모델 연결 키 등. 예: {\"color\":\"#4CAF6E\"}"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "not_null": true,
+          "generated": "",
+          "default_value": "true",
+          "description": "판매 중인지. 판매 중단해도 기존 보유 기록은 유지"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "items_code_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((code)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_display_meta_object_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(display_meta) = 'object'::text))",
+          "target_table": null,
+          "columns": [
+            "display_meta"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_name_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((name)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_price_nonnegative_check",
+          "type": "c",
+          "definition": "CHECK ((price_cell >= 0))",
+          "target_table": null,
+          "columns": [
+            "price_cell"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_code_not_null",
+          "type": "n",
+          "definition": "NOT NULL code",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_display_meta_not_null",
+          "type": "n",
+          "definition": "NOT NULL display_meta",
+          "target_table": null,
+          "columns": [
+            "display_meta"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_is_active_not_null",
+          "type": "n",
+          "definition": "NOT NULL is_active",
+          "target_table": null,
+          "columns": [
+            "is_active"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_name_not_null",
+          "type": "n",
+          "definition": "NOT NULL name",
+          "target_table": null,
+          "columns": [
+            "name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_price_cell_not_null",
+          "type": "n",
+          "definition": "NOT NULL price_cell",
+          "target_table": null,
+          "columns": [
+            "price_cell"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "items_code_key",
+          "type": "u",
+          "definition": "UNIQUE (code)",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "items_code_key",
+          "definition": "CREATE UNIQUE INDEX items_code_key ON dorobus.items USING btree (code)"
+        },
+        {
+          "name": "items_pkey",
+          "definition": "CREATE UNIQUE INDEX items_pkey ON dorobus.items USING btree (id)"
+        }
+      ]
+    },
+    {
+      "name": "learning_attempts",
+      "description": "풀이 시도",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "제출 기록 고유 번호"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "답안을 제출한 사용자"
+        },
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "실제로 푼 문제 버전"
+        },
+        {
+          "name": "assignment_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "어느 과제를 보고 풀었는지. 독립적으로 풀면 비워 둠"
+        },
+        {
+          "name": "step_key",
+          "type": "character varying(100)",
+          "not_null": false,
+          "generated": "",
+          "default_value": "NULL::character varying",
+          "description": "여러 단계 중 답변한 단계의 고정 이름. 예: step-1"
+        },
+        {
+          "name": "scope",
+          "type": "character varying(20)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "step은 단계 답변, activity는 전체 활동 답안"
+        },
+        {
+          "name": "answer",
+          "type": "jsonb",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "학생이 제출한 보기 ID·순서·블록 목록 등. 예: {\"option_id\":\"light\"}"
+        },
+        {
+          "name": "is_correct",
+          "type": "boolean",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "서버 채점 결과. 정답 true / 오답 false"
+        },
+        {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "서버가 제출을 접수한 시각"
+        },
+        {
+          "name": "request_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "같은 제출 요청의 재전송을 식별하는 번호. 재시도 때 같은 값을 재사용"
+        },
+        {
+          "name": "repair_run_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "repair_case_role",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "attempt_no",
+          "type": "integer",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "run 안의 제출 순번. 서버가 run 잠금 뒤 발급. request_id와 역할이 다름"
+        },
+        {
+          "name": "verdict",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "수리 판정. false인 is_correct를 모두 오답으로 집계하면 안 됨"
+        },
+        {
+          "name": "judge_source",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "rule_version",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "prompt_version",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "model_id",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "fallback_reason",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "feedback_text",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "wrong_hypothesis_code",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "대표 오답 유형. wrong인데 NULL이면 미분류. 원본 규칙/프롬프트 버전과 함께 해석"
+        },
+        {
+          "name": "answer_redacted_at",
+          "type": "timestamp with time zone",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "원문 제거 시각. 보관 기간은 아직 미정이며 자동 삭제 작업은 미구현"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "attempts_repair_answer_shape_check",
+          "type": "c",
+          "definition": "CHECK (((repair_run_id IS NULL) OR COALESCE(((NOT (answer ? 'option_id'::text)) AND (((answer_redacted_at IS NULL) AND (jsonb_typeof((answer -> 'text'::text)) = 'string'::text) AND (btrim((answer ->> 'text'::text)) <> ''::text) AND ((char_length((answer ->> 'text'::text)) >= 1) AND (char_length((answer ->> 'text'::text)) <= 400))) OR ((answer_redacted_at IS NOT NULL) AND (answer_redacted_at >= submitted_at) AND (NOT (answer ? 'text'::text))))), false)))",
+          "target_table": null,
+          "columns": [
+            "repair_run_id",
+            "answer",
+            "answer_redacted_at",
+            "submitted_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "attempts_repair_metadata_check",
+          "type": "c",
+          "definition": "CHECK ((((repair_run_id IS NULL) AND (repair_case_role IS NULL) AND (verdict IS NULL) AND (judge_source IS NULL) AND (rule_version IS NULL) AND (prompt_version IS NULL) AND (model_id IS NULL) AND (fallback_reason IS NULL) AND (feedback_text IS NULL) AND (attempt_no IS NULL) AND (wrong_hypothesis_code IS NULL) AND (answer_redacted_at IS NULL)) OR ((repair_run_id IS NOT NULL) AND (repair_case_role IS NOT NULL) AND (repair_case_role = ANY (ARRAY['onboarding'::text, 'festival'::text, 'finale'::text, 'remote'::text])) AND (verdict IS NOT NULL) AND (verdict = ANY (ARRAY['correct'::text, 'partial'::text, 'wrong'::text, 'needs'::text, 'unclear'::text])) AND (judge_source IS NOT NULL) AND (judge_source = ANY (ARRAY['rule'::text, 'model'::text, 'hybrid'::text])) AND (rule_version IS NOT NULL) AND (btrim(rule_version) <> ''::text) AND (attempt_no IS NOT NULL) AND (attempt_no >= 1) AND (is_correct = (verdict = 'correct'::text)) AND ((scope)::text = 'activity'::text) AND (step_key IS NULL) AND ((judge_source = 'rule'::text) OR ((prompt_version IS NOT NULL) AND (model_id IS NOT NULL))))))",
+          "target_table": null,
+          "columns": [
+            "repair_run_id",
+            "repair_case_role",
+            "verdict",
+            "judge_source",
+            "rule_version",
+            "prompt_version",
+            "model_id",
+            "fallback_reason",
+            "feedback_text",
+            "attempt_no",
+            "wrong_hypothesis_code",
+            "answer_redacted_at",
+            "is_correct",
+            "scope",
+            "step_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "attempts_wrong_only_check",
+          "type": "c",
+          "definition": "CHECK (((wrong_hypothesis_code IS NULL) OR ((verdict IS NOT NULL) AND (verdict = 'wrong'::text))))",
+          "target_table": null,
+          "columns": [
+            "wrong_hypothesis_code",
+            "verdict"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_answer_object_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(answer) = 'object'::text))",
+          "target_table": null,
+          "columns": [
+            "answer"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_scope_step_consistent_check",
+          "type": "c",
+          "definition": "CHECK (((((scope)::text = 'step'::text) AND (step_key IS NOT NULL) AND (btrim((step_key)::text) <> ''::text)) OR (((scope)::text = 'activity'::text) AND (step_key IS NULL))))",
+          "target_table": null,
+          "columns": [
+            "scope",
+            "step_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_without_assignment",
+          "type": "c",
+          "definition": "CHECK (((repair_run_id IS NULL) OR (assignment_id IS NULL)))",
+          "target_table": null,
+          "columns": [
+            "repair_run_id",
+            "assignment_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "attempts_repair_run_owner_version_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (repair_run_id, user_id, content_version_id, repair_case_role) REFERENCES dorobus.repair_runs(id, user_id, content_version_id, case_role)",
+          "target_table": "repair_runs",
+          "columns": [
+            "repair_run_id",
+            "user_id",
+            "content_version_id",
+            "repair_case_role"
+          ],
+          "target_columns": [
+            "id",
+            "user_id",
+            "content_version_id",
+            "case_role"
+          ]
+        },
+        {
+          "name": "attempts_wrong_type_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id, wrong_hypothesis_code) REFERENCES dorobus.repair_wrong_hypotheses(content_version_id, code)",
+          "target_table": "repair_wrong_hypotheses",
+          "columns": [
+            "content_version_id",
+            "wrong_hypothesis_code"
+          ],
+          "target_columns": [
+            "content_version_id",
+            "code"
+          ]
+        },
+        {
+          "name": "learning_attempts_assignment_version_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (assignment_id, content_version_id) REFERENCES dorobus.assignments(id, content_version_id) ON DELETE RESTRICT",
+          "target_table": "assignments",
+          "columns": [
+            "assignment_id",
+            "content_version_id"
+          ],
+          "target_columns": [
+            "id",
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "learning_attempts_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id) REFERENCES dorobus.content_versions(id) ON DELETE RESTRICT",
+          "target_table": "content_versions",
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "learning_attempts_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "learning_attempts_answer_not_null",
+          "type": "n",
+          "definition": "NOT NULL answer",
+          "target_table": null,
+          "columns": [
+            "answer"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_is_correct_not_null",
+          "type": "n",
+          "definition": "NOT NULL is_correct",
+          "target_table": null,
+          "columns": [
+            "is_correct"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_request_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL request_id",
+          "target_table": null,
+          "columns": [
+            "request_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_scope_not_null",
+          "type": "n",
+          "definition": "NOT NULL scope",
+          "target_table": null,
+          "columns": [
+            "scope"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_submitted_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL submitted_at",
+          "target_table": null,
+          "columns": [
+            "submitted_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "attempts_repair_identity_key",
+          "type": "u",
+          "definition": "UNIQUE (id, repair_run_id, content_version_id)",
+          "target_table": null,
+          "columns": [
+            "id",
+            "repair_run_id",
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "attempts_repair_sequence_key",
+          "type": "u",
+          "definition": "UNIQUE (repair_run_id, attempt_no)",
+          "target_table": null,
+          "columns": [
+            "repair_run_id",
+            "attempt_no"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "attempts_verdict_identity_key",
+          "type": "u",
+          "definition": "UNIQUE (id, repair_run_id, content_version_id, verdict)",
+          "target_table": null,
+          "columns": [
+            "id",
+            "repair_run_id",
+            "content_version_id",
+            "verdict"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "learning_attempts_user_request_key",
+          "type": "u",
+          "definition": "UNIQUE (user_id, request_id)",
+          "target_table": null,
+          "columns": [
+            "user_id",
+            "request_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "attempts_repair_identity_key",
+          "definition": "CREATE UNIQUE INDEX attempts_repair_identity_key ON dorobus.learning_attempts USING btree (id, repair_run_id, content_version_id)"
+        },
+        {
+          "name": "attempts_repair_sequence_key",
+          "definition": "CREATE UNIQUE INDEX attempts_repair_sequence_key ON dorobus.learning_attempts USING btree (repair_run_id, attempt_no)"
+        },
+        {
+          "name": "attempts_verdict_identity_key",
+          "definition": "CREATE UNIQUE INDEX attempts_verdict_identity_key ON dorobus.learning_attempts USING btree (id, repair_run_id, content_version_id, verdict)"
+        },
+        {
+          "name": "learning_attempts_assignment_submitted_idx",
+          "definition": "CREATE INDEX learning_attempts_assignment_submitted_idx ON dorobus.learning_attempts USING btree (assignment_id, submitted_at)"
+        },
+        {
+          "name": "learning_attempts_pkey",
+          "definition": "CREATE UNIQUE INDEX learning_attempts_pkey ON dorobus.learning_attempts USING btree (id)"
+        },
+        {
+          "name": "learning_attempts_repair_time_idx",
+          "definition": "CREATE INDEX learning_attempts_repair_time_idx ON dorobus.learning_attempts USING btree (repair_run_id, submitted_at, id)"
+        },
+        {
+          "name": "learning_attempts_user_request_key",
+          "definition": "CREATE UNIQUE INDEX learning_attempts_user_request_key ON dorobus.learning_attempts USING btree (user_id, request_id)"
+        },
+        {
+          "name": "learning_attempts_user_submitted_idx",
+          "definition": "CREATE INDEX learning_attempts_user_submitted_idx ON dorobus.learning_attempts USING btree (user_id, submitted_at)"
+        }
+      ]
+    },
+    {
+      "name": "parts",
+      "description": "소모되지 않는 수리 해금 부품의 종류. 학생별 보유 재고가 아님",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": null
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "parts_code_nonempty",
+          "type": "c",
+          "definition": "CHECK ((btrim(code) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "parts_name_nonempty",
+          "type": "c",
+          "definition": "CHECK ((btrim(name) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "parts_code_not_null",
+          "type": "n",
+          "definition": "NOT NULL code",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "parts_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "parts_name_not_null",
+          "type": "n",
+          "definition": "NOT NULL name",
+          "target_table": null,
+          "columns": [
+            "name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "parts_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "parts_code_key",
+          "type": "u",
+          "definition": "UNIQUE (code)",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "parts_code_key",
+          "definition": "CREATE UNIQUE INDEX parts_code_key ON dorobus.parts USING btree (code)"
+        },
+        {
+          "name": "parts_pkey",
+          "definition": "CREATE UNIQUE INDEX parts_pkey ON dorobus.parts USING btree (id)"
+        }
+      ]
+    },
+    {
+      "name": "player_profiles",
+      "description": "현재 선택·게임 설정",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "설정의 주인인 사용자"
+        },
+        {
+          "name": "selected_class_group_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "현재 화면에서 선택한 반. 수강 이력 전체를 뜻하지 않음"
+        },
+        {
+          "name": "active_world_content_version_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "현재 도로랜드에서 수행하려고 선택한 문제 버전"
+        },
+        {
+          "name": "goal_item_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "구매 목표로 정한 가구"
+        },
+        {
+          "name": "preferences",
+          "type": "jsonb",
+          "not_null": true,
+          "generated": "",
+          "default_value": "'{}'::jsonb",
+          "description": "보이드 성격·음량 같은 설정. 예: {\"robot_persona\":\"kind\"}"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "설정을 마지막으로 바꾼 시각"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "player_profiles_preferences_object_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(preferences) = 'object'::text))",
+          "target_table": null,
+          "columns": [
+            "preferences"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "player_profiles_active_world_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (active_world_content_version_id) REFERENCES dorobus.content_versions(id) ON DELETE SET NULL",
+          "target_table": "content_versions",
+          "columns": [
+            "active_world_content_version_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "player_profiles_goal_item_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (goal_item_id) REFERENCES dorobus.items(id) ON DELETE SET NULL",
+          "target_table": "items",
+          "columns": [
+            "goal_item_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "player_profiles_selected_class_group_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (selected_class_group_id) REFERENCES dorobus.class_groups(id) ON DELETE SET NULL",
+          "target_table": "class_groups",
+          "columns": [
+            "selected_class_group_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "player_profiles_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "player_profiles_preferences_not_null",
+          "type": "n",
+          "definition": "NOT NULL preferences",
+          "target_table": null,
+          "columns": [
+            "preferences"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "player_profiles_updated_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL updated_at",
+          "target_table": null,
+          "columns": [
+            "updated_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "player_profiles_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "player_profiles_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (user_id)",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "player_profiles_pkey",
+          "definition": "CREATE UNIQUE INDEX player_profiles_pkey ON dorobus.player_profiles USING btree (user_id)"
+        }
+      ]
+    },
+    {
+      "name": "repair_attempt_evidence",
+      "description": "한 제출에서 학생이 근거로 선택한 단서 한 개. 근거 타당성 점수가 아님",
+      "columns": [
+        {
+          "name": "attempt_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "run_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "clue_key",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_attempt_evidence_attempt_id_run_id_content_version__fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (attempt_id, run_id, content_version_id) REFERENCES dorobus.learning_attempts(id, repair_run_id, content_version_id)",
+          "target_table": "learning_attempts",
+          "columns": [
+            "attempt_id",
+            "run_id",
+            "content_version_id"
+          ],
+          "target_columns": [
+            "id",
+            "repair_run_id",
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_attempt_evidence_run_id_content_version_id_clue_key_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (run_id, content_version_id, clue_key) REFERENCES dorobus.repair_clue_discoveries(run_id, content_version_id, clue_key)",
+          "target_table": "repair_clue_discoveries",
+          "columns": [
+            "run_id",
+            "content_version_id",
+            "clue_key"
+          ],
+          "target_columns": [
+            "run_id",
+            "content_version_id",
+            "clue_key"
+          ]
+        },
+        {
+          "name": "repair_attempt_evidence_attempt_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL attempt_id",
+          "target_table": null,
+          "columns": [
+            "attempt_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_attempt_evidence_clue_key_not_null",
+          "type": "n",
+          "definition": "NOT NULL clue_key",
+          "target_table": null,
+          "columns": [
+            "clue_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_attempt_evidence_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_attempt_evidence_run_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL run_id",
+          "target_table": null,
+          "columns": [
+            "run_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_attempt_evidence_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (attempt_id, clue_key)",
+          "target_table": null,
+          "columns": [
+            "attempt_id",
+            "clue_key"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_attempt_evidence_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_attempt_evidence_pkey ON dorobus.repair_attempt_evidence USING btree (attempt_id, clue_key)"
+        }
+      ]
+    },
+    {
+      "name": "repair_case_versions",
+      "description": "수리 사건의 공개 버전 한 개. content_id는 복합 FK 검증을 위한 중복",
+      "columns": [
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "content_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "content_kind",
+          "type": "character varying(30)",
+          "not_null": true,
+          "generated": "s",
+          "default_value": "'repair_case'::character varying(30)",
+          "description": "자동 계산 repair_case. 수리 정의를 비수리 콘텐츠로 위장하거나 NULL로 우회할 수 없도록 실제 contents.kind와 연결"
+        },
+        {
+          "name": "case_role",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "source_ref",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "unlock_part_code",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "unlock_license_code",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "entry_rule",
+          "type": "jsonb",
+          "not_null": true,
+          "generated": "",
+          "default_value": "'{}'::jsonb",
+          "description": "서버가 검사하는 사건 입장 규칙. 예: min_festival_completions, requires_remote_license. 수업/월드 스토리는 참조하지 않음"
+        },
+        {
+          "name": "reward_cell",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": "0",
+          "description": "완료 보상 CELL. v3의 9개 사건은 모두 0. 양수 보상을 위한 일반 경로는 유지. 서버만 읽고 결정"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_case_versions_case_role_check",
+          "type": "c",
+          "definition": "CHECK ((case_role = ANY (ARRAY['onboarding'::text, 'festival'::text, 'finale'::text, 'remote'::text])))",
+          "target_table": null,
+          "columns": [
+            "case_role"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_check",
+          "type": "c",
+          "definition": "CHECK (((unlock_part_code IS NULL) OR (case_role = 'festival'::text)))",
+          "target_table": null,
+          "columns": [
+            "unlock_part_code",
+            "case_role"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_check1",
+          "type": "c",
+          "definition": "CHECK (((unlock_license_code IS NULL) OR (case_role = 'finale'::text)))",
+          "target_table": null,
+          "columns": [
+            "unlock_license_code",
+            "case_role"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_entry_rule_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(entry_rule) = 'object'::text))",
+          "target_table": null,
+          "columns": [
+            "entry_rule"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_reward_cell_check",
+          "type": "c",
+          "definition": "CHECK ((reward_cell >= 0))",
+          "target_table": null,
+          "columns": [
+            "reward_cell"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_source_ref_check",
+          "type": "c",
+          "definition": "CHECK ((btrim(source_ref) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "source_ref"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_unlock_license_code_check",
+          "type": "c",
+          "definition": "CHECK ((unlock_license_code = 'remote_repair'::text))",
+          "target_table": null,
+          "columns": [
+            "unlock_license_code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_content_id_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_id, content_version_id) REFERENCES dorobus.content_versions(content_id, id)",
+          "target_table": "content_versions",
+          "columns": [
+            "content_id",
+            "content_version_id"
+          ],
+          "target_columns": [
+            "content_id",
+            "id"
+          ]
+        },
+        {
+          "name": "repair_definition_kind_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_id, content_kind) REFERENCES dorobus.contents(id, kind)",
+          "target_table": "contents",
+          "columns": [
+            "content_id",
+            "content_kind"
+          ],
+          "target_columns": [
+            "id",
+            "kind"
+          ]
+        },
+        {
+          "name": "repair_unlock_part_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (unlock_part_code) REFERENCES dorobus.parts(code)",
+          "target_table": "parts",
+          "columns": [
+            "unlock_part_code"
+          ],
+          "target_columns": [
+            "code"
+          ]
+        },
+        {
+          "name": "repair_case_versions_case_role_not_null",
+          "type": "n",
+          "definition": "NOT NULL case_role",
+          "target_table": null,
+          "columns": [
+            "case_role"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_content_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_id",
+          "target_table": null,
+          "columns": [
+            "content_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_content_kind_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_kind",
+          "target_table": null,
+          "columns": [
+            "content_kind"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_entry_rule_not_null",
+          "type": "n",
+          "definition": "NOT NULL entry_rule",
+          "target_table": null,
+          "columns": [
+            "entry_rule"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_reward_cell_not_null",
+          "type": "n",
+          "definition": "NOT NULL reward_cell",
+          "target_table": null,
+          "columns": [
+            "reward_cell"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_source_ref_not_null",
+          "type": "n",
+          "definition": "NOT NULL source_ref",
+          "target_table": null,
+          "columns": [
+            "source_ref"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (content_version_id)",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_case_versions_content_version_id_content_id_case_rol_key",
+          "type": "u",
+          "definition": "UNIQUE (content_version_id, content_id, case_role)",
+          "target_table": null,
+          "columns": [
+            "content_version_id",
+            "content_id",
+            "case_role"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_case_versions_content_version_id_content_id_case_rol_key",
+          "definition": "CREATE UNIQUE INDEX repair_case_versions_content_version_id_content_id_case_rol_key ON dorobus.repair_case_versions USING btree (content_version_id, content_id, case_role)"
+        },
+        {
+          "name": "repair_case_versions_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_case_versions_pkey ON dorobus.repair_case_versions USING btree (content_version_id)"
+        }
+      ]
+    },
+    {
+      "name": "repair_clue_discoveries",
+      "description": "한 도전에서 한 단서를 처음 확인한 사실과 현재 메모",
+      "columns": [
+        {
+          "name": "run_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "clue_key",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "discovery_order",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "discovered_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": null
+        },
+        {
+          "name": "note_text",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_clue_discoveries_discovery_order_check",
+          "type": "c",
+          "definition": "CHECK ((discovery_order > 0))",
+          "target_table": null,
+          "columns": [
+            "discovery_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clue_discoveries_note_text_check",
+          "type": "c",
+          "definition": "CHECK (((note_text IS NULL) OR (char_length(note_text) <= 200)))",
+          "target_table": null,
+          "columns": [
+            "note_text"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clue_discoveries_content_version_id_clue_key_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id, clue_key) REFERENCES dorobus.repair_clues(content_version_id, clue_key)",
+          "target_table": "repair_clues",
+          "columns": [
+            "content_version_id",
+            "clue_key"
+          ],
+          "target_columns": [
+            "content_version_id",
+            "clue_key"
+          ]
+        },
+        {
+          "name": "repair_clue_discoveries_run_id_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (run_id, content_version_id) REFERENCES dorobus.repair_runs(id, content_version_id)",
+          "target_table": "repair_runs",
+          "columns": [
+            "run_id",
+            "content_version_id"
+          ],
+          "target_columns": [
+            "id",
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_clue_discoveries_clue_key_not_null",
+          "type": "n",
+          "definition": "NOT NULL clue_key",
+          "target_table": null,
+          "columns": [
+            "clue_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clue_discoveries_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clue_discoveries_discovered_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL discovered_at",
+          "target_table": null,
+          "columns": [
+            "discovered_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clue_discoveries_discovery_order_not_null",
+          "type": "n",
+          "definition": "NOT NULL discovery_order",
+          "target_table": null,
+          "columns": [
+            "discovery_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clue_discoveries_run_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL run_id",
+          "target_table": null,
+          "columns": [
+            "run_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clue_discoveries_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (run_id, clue_key)",
+          "target_table": null,
+          "columns": [
+            "run_id",
+            "clue_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clue_discoveries_run_id_content_version_id_clue_key_key",
+          "type": "u",
+          "definition": "UNIQUE (run_id, content_version_id, clue_key)",
+          "target_table": null,
+          "columns": [
+            "run_id",
+            "content_version_id",
+            "clue_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clue_discoveries_run_id_discovery_order_key",
+          "type": "u",
+          "definition": "UNIQUE (run_id, discovery_order)",
+          "target_table": null,
+          "columns": [
+            "run_id",
+            "discovery_order"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_clue_discoveries_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_clue_discoveries_pkey ON dorobus.repair_clue_discoveries USING btree (run_id, clue_key)"
+        },
+        {
+          "name": "repair_clue_discoveries_run_id_content_version_id_clue_key_key",
+          "definition": "CREATE UNIQUE INDEX repair_clue_discoveries_run_id_content_version_id_clue_key_key ON dorobus.repair_clue_discoveries USING btree (run_id, content_version_id, clue_key)"
+        },
+        {
+          "name": "repair_clue_discoveries_run_id_discovery_order_key",
+          "definition": "CREATE UNIQUE INDEX repair_clue_discoveries_run_id_discovery_order_key ON dorobus.repair_clue_discoveries USING btree (run_id, discovery_order)"
+        }
+      ]
+    },
+    {
+      "name": "repair_clues",
+      "description": "사건 버전에 속한 단서 한 개. 학생 기록과 분리된 공통 정의",
+      "columns": [
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "clue_key",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "fact_text",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "npc_name",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "display_order",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "unlock_after_keys",
+          "type": "text[]",
+          "not_null": true,
+          "generated": "",
+          "default_value": "'{}'::text[]",
+          "description": "비어 있으면 즉시 표시. 선행 단서 중 하나 이상 확인하면 표시. 도움으로 별도 해금 가능. 같은 버전 키 존재·순환은 발행 검사"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_clue_npc_check",
+          "type": "c",
+          "definition": "CHECK ((((category = 'question'::text) AND (npc_name IS NOT NULL) AND (btrim(npc_name) <> ''::text)) OR ((category <> 'question'::text) AND (npc_name IS NULL))))",
+          "target_table": null,
+          "columns": [
+            "category",
+            "npc_name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_category_check",
+          "type": "c",
+          "definition": "CHECK ((category = ANY (ARRAY['observation'::text, 'question'::text, 'inspection'::text, 'record'::text])))",
+          "target_table": null,
+          "columns": [
+            "category"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_check",
+          "type": "c",
+          "definition": "CHECK (((array_position(unlock_after_keys, NULL::text) IS NULL) AND (NOT (clue_key = ANY (unlock_after_keys)))))",
+          "target_table": null,
+          "columns": [
+            "unlock_after_keys",
+            "clue_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_clue_key_check",
+          "type": "c",
+          "definition": "CHECK ((btrim(clue_key) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "clue_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_display_order_check",
+          "type": "c",
+          "definition": "CHECK ((display_order > 0))",
+          "target_table": null,
+          "columns": [
+            "display_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_title_check",
+          "type": "c",
+          "definition": "CHECK ((btrim(title) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id) REFERENCES dorobus.repair_case_versions(content_version_id)",
+          "target_table": "repair_case_versions",
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": [
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_clues_category_not_null",
+          "type": "n",
+          "definition": "NOT NULL category",
+          "target_table": null,
+          "columns": [
+            "category"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_clue_key_not_null",
+          "type": "n",
+          "definition": "NOT NULL clue_key",
+          "target_table": null,
+          "columns": [
+            "clue_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_display_order_not_null",
+          "type": "n",
+          "definition": "NOT NULL display_order",
+          "target_table": null,
+          "columns": [
+            "display_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_fact_text_not_null",
+          "type": "n",
+          "definition": "NOT NULL fact_text",
+          "target_table": null,
+          "columns": [
+            "fact_text"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_title_not_null",
+          "type": "n",
+          "definition": "NOT NULL title",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_unlock_after_keys_not_null",
+          "type": "n",
+          "definition": "NOT NULL unlock_after_keys",
+          "target_table": null,
+          "columns": [
+            "unlock_after_keys"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (content_version_id, clue_key)",
+          "target_table": null,
+          "columns": [
+            "content_version_id",
+            "clue_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_clues_content_version_id_display_order_key",
+          "type": "u",
+          "definition": "UNIQUE (content_version_id, display_order)",
+          "target_table": null,
+          "columns": [
+            "content_version_id",
+            "display_order"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_clues_content_version_id_display_order_key",
+          "definition": "CREATE UNIQUE INDEX repair_clues_content_version_id_display_order_key ON dorobus.repair_clues USING btree (content_version_id, display_order)"
+        },
+        {
+          "name": "repair_clues_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_clues_pkey ON dorobus.repair_clues USING btree (content_version_id, clue_key)"
+        }
+      ]
+    },
+    {
+      "name": "repair_hint_events",
+      "description": "서버가 확정한 도움 한 건. 요청·자동·판정중 도움과 표시 확인을 구분",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": null
+        },
+        {
+          "name": "run_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "triggered_by_attempt_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "request_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "trigger_kind",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "phase",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "hint_key",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "hint_text",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "rule_version",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "shown_at",
+          "type": "timestamp with time zone",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "화면의 표시 확인 응답을 받은 시각. 미확인 NULL, 이해도/효과 측정값이 아님"
+        },
+        {
+          "name": "revealed_clue_key",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "이 도움 요청이 미리 연 단서. NULL이면 해금 효과 없는 도움. 재접속 시 이 값을 모아 복원"
+        },
+        {
+          "name": "issued_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "서버가 도움 응답을 확정한 시각. 실제로 읽었다는 의미가 아님"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "hint_display_time_check",
+          "type": "c",
+          "definition": "CHECK (((shown_at IS NULL) OR (shown_at >= issued_at)))",
+          "target_table": null,
+          "columns": [
+            "shown_at",
+            "issued_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_phase_check",
+          "type": "c",
+          "definition": "CHECK ((phase = ANY (ARRAY['investigation'::text, 'bench'::text])))",
+          "target_table": null,
+          "columns": [
+            "phase"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_trigger_kind_check",
+          "type": "c",
+          "definition": "CHECK ((trigger_kind = ANY (ARRAY['requested'::text, 'automatic'::text, 'judge_feedback'::text])))",
+          "target_table": null,
+          "columns": [
+            "trigger_kind"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "hint_revealed_clue_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id, revealed_clue_key) REFERENCES dorobus.repair_clues(content_version_id, clue_key)",
+          "target_table": "repair_clues",
+          "columns": [
+            "content_version_id",
+            "revealed_clue_key"
+          ],
+          "target_columns": [
+            "content_version_id",
+            "clue_key"
+          ]
+        },
+        {
+          "name": "repair_hint_events_run_id_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (run_id, content_version_id) REFERENCES dorobus.repair_runs(id, content_version_id)",
+          "target_table": "repair_runs",
+          "columns": [
+            "run_id",
+            "content_version_id"
+          ],
+          "target_columns": [
+            "id",
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_hint_events_triggered_by_attempt_id_run_id_content__fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (triggered_by_attempt_id, run_id, content_version_id) REFERENCES dorobus.learning_attempts(id, repair_run_id, content_version_id)",
+          "target_table": "learning_attempts",
+          "columns": [
+            "triggered_by_attempt_id",
+            "run_id",
+            "content_version_id"
+          ],
+          "target_columns": [
+            "id",
+            "repair_run_id",
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_hint_events_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_hint_text_not_null",
+          "type": "n",
+          "definition": "NOT NULL hint_text",
+          "target_table": null,
+          "columns": [
+            "hint_text"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_issued_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL issued_at",
+          "target_table": null,
+          "columns": [
+            "issued_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_phase_not_null",
+          "type": "n",
+          "definition": "NOT NULL phase",
+          "target_table": null,
+          "columns": [
+            "phase"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_request_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL request_id",
+          "target_table": null,
+          "columns": [
+            "request_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_rule_version_not_null",
+          "type": "n",
+          "definition": "NOT NULL rule_version",
+          "target_table": null,
+          "columns": [
+            "rule_version"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_run_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL run_id",
+          "target_table": null,
+          "columns": [
+            "run_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_trigger_kind_not_null",
+          "type": "n",
+          "definition": "NOT NULL trigger_kind",
+          "target_table": null,
+          "columns": [
+            "trigger_kind"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_hint_events_run_id_request_id_key",
+          "type": "u",
+          "definition": "UNIQUE (run_id, request_id)",
+          "target_table": null,
+          "columns": [
+            "run_id",
+            "request_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_hint_events_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_hint_events_pkey ON dorobus.repair_hint_events USING btree (id)"
+        },
+        {
+          "name": "repair_hint_events_run_id_request_id_key",
+          "definition": "CREATE UNIQUE INDEX repair_hint_events_run_id_request_id_key ON dorobus.repair_hint_events USING btree (run_id, request_id)"
+        },
+        {
+          "name": "repair_hints_run_time_idx",
+          "definition": "CREATE INDEX repair_hints_run_time_idx ON dorobus.repair_hint_events USING btree (run_id, shown_at, id)"
+        }
+      ]
+    },
+    {
+      "name": "repair_problem_solutions",
+      "description": "한 도전에서 한 문제의 원인이 처음 인정된 제출. 재판정 기능은 후속 범위",
+      "columns": [
+        {
+          "name": "run_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "problem_key",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "attempt_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "solved_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": null
+        },
+        {
+          "name": "accepted_verdict",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "원본 제출의 correct/partial과 일치해야 한다. 해당 원인을 실제로 인정할지는 서버 판정"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_problem_solutions_accepted_verdict_check",
+          "type": "c",
+          "definition": "CHECK ((accepted_verdict = ANY (ARRAY['correct'::text, 'partial'::text])))",
+          "target_table": null,
+          "columns": [
+            "accepted_verdict"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problem_solutions_attempt_id_run_id_content_version_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (attempt_id, run_id, content_version_id) REFERENCES dorobus.learning_attempts(id, repair_run_id, content_version_id)",
+          "target_table": "learning_attempts",
+          "columns": [
+            "attempt_id",
+            "run_id",
+            "content_version_id"
+          ],
+          "target_columns": [
+            "id",
+            "repair_run_id",
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_problem_solutions_content_version_id_problem_key_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id, problem_key) REFERENCES dorobus.repair_problems(content_version_id, problem_key)",
+          "target_table": "repair_problems",
+          "columns": [
+            "content_version_id",
+            "problem_key"
+          ],
+          "target_columns": [
+            "content_version_id",
+            "problem_key"
+          ]
+        },
+        {
+          "name": "solutions_accepted_attempt_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (attempt_id, run_id, content_version_id, accepted_verdict) REFERENCES dorobus.learning_attempts(id, repair_run_id, content_version_id, verdict)",
+          "target_table": "learning_attempts",
+          "columns": [
+            "attempt_id",
+            "run_id",
+            "content_version_id",
+            "accepted_verdict"
+          ],
+          "target_columns": [
+            "id",
+            "repair_run_id",
+            "content_version_id",
+            "verdict"
+          ]
+        },
+        {
+          "name": "repair_problem_solutions_accepted_verdict_not_null",
+          "type": "n",
+          "definition": "NOT NULL accepted_verdict",
+          "target_table": null,
+          "columns": [
+            "accepted_verdict"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problem_solutions_attempt_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL attempt_id",
+          "target_table": null,
+          "columns": [
+            "attempt_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problem_solutions_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problem_solutions_problem_key_not_null",
+          "type": "n",
+          "definition": "NOT NULL problem_key",
+          "target_table": null,
+          "columns": [
+            "problem_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problem_solutions_run_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL run_id",
+          "target_table": null,
+          "columns": [
+            "run_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problem_solutions_solved_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL solved_at",
+          "target_table": null,
+          "columns": [
+            "solved_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problem_solutions_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (run_id, problem_key)",
+          "target_table": null,
+          "columns": [
+            "run_id",
+            "problem_key"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_problem_solutions_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_problem_solutions_pkey ON dorobus.repair_problem_solutions USING btree (run_id, problem_key)"
+        }
+      ]
+    },
+    {
+      "name": "repair_problems",
+      "description": "설명해야 할 원인 한 개. 판정 알고리즘은 버전별 grading_rule 및 Git 규칙 모듈",
+      "columns": [
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "problem_key",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "display_order",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_problems_display_order_check",
+          "type": "c",
+          "definition": "CHECK ((display_order > 0))",
+          "target_table": null,
+          "columns": [
+            "display_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problems_problem_key_check",
+          "type": "c",
+          "definition": "CHECK ((btrim(problem_key) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "problem_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problems_title_check",
+          "type": "c",
+          "definition": "CHECK ((btrim(title) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problems_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id) REFERENCES dorobus.repair_case_versions(content_version_id)",
+          "target_table": "repair_case_versions",
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": [
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_problems_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problems_display_order_not_null",
+          "type": "n",
+          "definition": "NOT NULL display_order",
+          "target_table": null,
+          "columns": [
+            "display_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problems_problem_key_not_null",
+          "type": "n",
+          "definition": "NOT NULL problem_key",
+          "target_table": null,
+          "columns": [
+            "problem_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problems_title_not_null",
+          "type": "n",
+          "definition": "NOT NULL title",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problems_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (content_version_id, problem_key)",
+          "target_table": null,
+          "columns": [
+            "content_version_id",
+            "problem_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_problems_content_version_id_display_order_key",
+          "type": "u",
+          "definition": "UNIQUE (content_version_id, display_order)",
+          "target_table": null,
+          "columns": [
+            "content_version_id",
+            "display_order"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_problems_content_version_id_display_order_key",
+          "definition": "CREATE UNIQUE INDEX repair_problems_content_version_id_display_order_key ON dorobus.repair_problems USING btree (content_version_id, display_order)"
+        },
+        {
+          "name": "repair_problems_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_problems_pkey ON dorobus.repair_problems USING btree (content_version_id, problem_key)"
+        }
+      ]
+    },
+    {
+      "name": "repair_runs",
+      "description": "한 번의 수리 도전과 현재 상태. 진행 중 도전은 재개하고 명시적 재도전은 새 행",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": null
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "content_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "case_role",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "phase",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": "'investigation'::text",
+          "description": null
+        },
+        {
+          "name": "settings",
+          "type": "jsonb",
+          "not_null": true,
+          "generated": "",
+          "default_value": "'{}'::jsonb",
+          "description": null
+        },
+        {
+          "name": "bench_revision",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": "0",
+          "description": null
+        },
+        {
+          "name": "state_revision",
+          "type": "bigint",
+          "not_null": true,
+          "generated": "",
+          "default_value": "0",
+          "description": null
+        },
+        {
+          "name": "draft_text",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "start_request_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": null
+        },
+        {
+          "name": "first_diagnosed_at",
+          "type": "timestamp with time zone",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": null
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "completion_request_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "완료 처리의 최초 요청. 이후 완료 재호출은 저장된 결과 반환"
+        },
+        {
+          "name": "license_holder_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "s",
+          "default_value": "\nCASE\n    WHEN (case_role = 'onboarding'::text) THEN NULL::uuid\n    ELSE user_id\nEND",
+          "description": "도입 사건이면 NULL, 그 외에는 자동으로 본인 ID. 학생이 NULL/타인 ID로 입장 조건 우회 불가"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_run_diagnosis_time_check",
+          "type": "c",
+          "definition": "CHECK (((first_diagnosed_at IS NULL) OR ((first_diagnosed_at >= started_at) AND ((completed_at IS NULL) OR (first_diagnosed_at <= completed_at)))))",
+          "target_table": null,
+          "columns": [
+            "first_diagnosed_at",
+            "started_at",
+            "completed_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_run_regular_diagnosis_check",
+          "type": "c",
+          "definition": "CHECK (((phase = 'investigation'::text) OR (first_diagnosed_at IS NOT NULL)))",
+          "target_table": null,
+          "columns": [
+            "phase",
+            "first_diagnosed_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_bench_revision_check",
+          "type": "c",
+          "definition": "CHECK ((bench_revision >= 0))",
+          "target_table": null,
+          "columns": [
+            "bench_revision"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_check1",
+          "type": "c",
+          "definition": "CHECK ((((phase = 'completed'::text) AND (completed_at IS NOT NULL) AND (completed_at >= started_at)) OR ((phase <> 'completed'::text) AND (completed_at IS NULL))))",
+          "target_table": null,
+          "columns": [
+            "phase",
+            "completed_at",
+            "started_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_draft_text_check",
+          "type": "c",
+          "definition": "CHECK (((draft_text IS NULL) OR (char_length(draft_text) <= 400)))",
+          "target_table": null,
+          "columns": [
+            "draft_text"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_phase_check",
+          "type": "c",
+          "definition": "CHECK ((phase = ANY (ARRAY['investigation'::text, 'bench'::text, 'completed'::text])))",
+          "target_table": null,
+          "columns": [
+            "phase"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_settings_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(settings) = 'object'::text))",
+          "target_table": null,
+          "columns": [
+            "settings"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_state_revision_check",
+          "type": "c",
+          "definition": "CHECK ((state_revision >= 0))",
+          "target_table": null,
+          "columns": [
+            "state_revision"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "runs_completed_request_check",
+          "type": "c",
+          "definition": "CHECK (((phase = 'completed'::text) = (completion_request_id IS NOT NULL)))",
+          "target_table": null,
+          "columns": [
+            "phase",
+            "completion_request_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_content_version_id_content_id_case_role_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id, content_id, case_role) REFERENCES dorobus.repair_case_versions(content_version_id, content_id, case_role)",
+          "target_table": "repair_case_versions",
+          "columns": [
+            "content_version_id",
+            "content_id",
+            "case_role"
+          ],
+          "target_columns": [
+            "content_version_id",
+            "content_id",
+            "case_role"
+          ]
+        },
+        {
+          "name": "repair_runs_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id)",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "run_conditional_license_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (license_holder_id) REFERENCES dorobus.driving_licenses(user_id) ON DELETE RESTRICT",
+          "target_table": "driving_licenses",
+          "columns": [
+            "license_holder_id"
+          ],
+          "target_columns": [
+            "user_id"
+          ]
+        },
+        {
+          "name": "repair_runs_bench_revision_not_null",
+          "type": "n",
+          "definition": "NOT NULL bench_revision",
+          "target_table": null,
+          "columns": [
+            "bench_revision"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_case_role_not_null",
+          "type": "n",
+          "definition": "NOT NULL case_role",
+          "target_table": null,
+          "columns": [
+            "case_role"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_content_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_id",
+          "target_table": null,
+          "columns": [
+            "content_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_phase_not_null",
+          "type": "n",
+          "definition": "NOT NULL phase",
+          "target_table": null,
+          "columns": [
+            "phase"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_settings_not_null",
+          "type": "n",
+          "definition": "NOT NULL settings",
+          "target_table": null,
+          "columns": [
+            "settings"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_start_request_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL start_request_id",
+          "target_table": null,
+          "columns": [
+            "start_request_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_started_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL started_at",
+          "target_table": null,
+          "columns": [
+            "started_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_state_revision_not_null",
+          "type": "n",
+          "definition": "NOT NULL state_revision",
+          "target_table": null,
+          "columns": [
+            "state_revision"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_updated_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL updated_at",
+          "target_table": null,
+          "columns": [
+            "updated_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_id_content_version_id_key",
+          "type": "u",
+          "definition": "UNIQUE (id, content_version_id)",
+          "target_table": null,
+          "columns": [
+            "id",
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_id_user_id_content_version_id_case_role_key",
+          "type": "u",
+          "definition": "UNIQUE (id, user_id, content_version_id, case_role)",
+          "target_table": null,
+          "columns": [
+            "id",
+            "user_id",
+            "content_version_id",
+            "case_role"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_runs_user_id_start_request_id_key",
+          "type": "u",
+          "definition": "UNIQUE (user_id, start_request_id)",
+          "target_table": null,
+          "columns": [
+            "user_id",
+            "start_request_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "runs_completion_identity_key",
+          "type": "u",
+          "definition": "UNIQUE (id, user_id, content_id, content_version_id, phase)",
+          "target_table": null,
+          "columns": [
+            "id",
+            "user_id",
+            "content_id",
+            "content_version_id",
+            "phase"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "runs_owner_phase_key",
+          "type": "u",
+          "definition": "UNIQUE (id, user_id, phase)",
+          "target_table": null,
+          "columns": [
+            "id",
+            "user_id",
+            "phase"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "runs_owner_role_phase_key",
+          "type": "u",
+          "definition": "UNIQUE (id, user_id, case_role, phase)",
+          "target_table": null,
+          "columns": [
+            "id",
+            "user_id",
+            "case_role",
+            "phase"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_runs_id_content_version_id_key",
+          "definition": "CREATE UNIQUE INDEX repair_runs_id_content_version_id_key ON dorobus.repair_runs USING btree (id, content_version_id)"
+        },
+        {
+          "name": "repair_runs_id_user_id_content_version_id_case_role_key",
+          "definition": "CREATE UNIQUE INDEX repair_runs_id_user_id_content_version_id_case_role_key ON dorobus.repair_runs USING btree (id, user_id, content_version_id, case_role)"
+        },
+        {
+          "name": "repair_runs_one_open_regular_idx",
+          "definition": "CREATE UNIQUE INDEX repair_runs_one_open_regular_idx ON dorobus.repair_runs USING btree (user_id, content_id) WHERE (phase <> 'completed'::text)"
+        },
+        {
+          "name": "repair_runs_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_runs_pkey ON dorobus.repair_runs USING btree (id)"
+        },
+        {
+          "name": "repair_runs_user_id_start_request_id_key",
+          "definition": "CREATE UNIQUE INDEX repair_runs_user_id_start_request_id_key ON dorobus.repair_runs USING btree (user_id, start_request_id)"
+        },
+        {
+          "name": "repair_runs_user_started_idx",
+          "definition": "CREATE INDEX repair_runs_user_started_idx ON dorobus.repair_runs USING btree (user_id, started_at)"
+        },
+        {
+          "name": "runs_completion_identity_key",
+          "definition": "CREATE UNIQUE INDEX runs_completion_identity_key ON dorobus.repair_runs USING btree (id, user_id, content_id, content_version_id, phase)"
+        },
+        {
+          "name": "runs_owner_phase_key",
+          "definition": "CREATE UNIQUE INDEX runs_owner_phase_key ON dorobus.repair_runs USING btree (id, user_id, phase)"
+        },
+        {
+          "name": "runs_owner_role_phase_key",
+          "definition": "CREATE UNIQUE INDEX runs_owner_role_phase_key ON dorobus.repair_runs USING btree (id, user_id, case_role, phase)"
+        }
+      ]
+    },
+    {
+      "name": "repair_tests",
+      "description": "시험 정의 한 개. 설정 의존 키의 유효성은 콘텐츠 발행 검사에서 확인",
+      "columns": [
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "test_key",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "dependent_controls",
+          "type": "text[]",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "pass_text",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "fail_text",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "display_order",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_tests_dependent_controls_check",
+          "type": "c",
+          "definition": "CHECK ((array_position(dependent_controls, NULL::text) IS NULL))",
+          "target_table": null,
+          "columns": [
+            "dependent_controls"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_display_order_check",
+          "type": "c",
+          "definition": "CHECK ((display_order > 0))",
+          "target_table": null,
+          "columns": [
+            "display_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_test_key_check",
+          "type": "c",
+          "definition": "CHECK ((btrim(test_key) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "test_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_title_check",
+          "type": "c",
+          "definition": "CHECK ((btrim(title) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id) REFERENCES dorobus.repair_case_versions(content_version_id)",
+          "target_table": "repair_case_versions",
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": [
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_tests_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_dependent_controls_not_null",
+          "type": "n",
+          "definition": "NOT NULL dependent_controls",
+          "target_table": null,
+          "columns": [
+            "dependent_controls"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_display_order_not_null",
+          "type": "n",
+          "definition": "NOT NULL display_order",
+          "target_table": null,
+          "columns": [
+            "display_order"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_fail_text_not_null",
+          "type": "n",
+          "definition": "NOT NULL fail_text",
+          "target_table": null,
+          "columns": [
+            "fail_text"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_pass_text_not_null",
+          "type": "n",
+          "definition": "NOT NULL pass_text",
+          "target_table": null,
+          "columns": [
+            "pass_text"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_test_key_not_null",
+          "type": "n",
+          "definition": "NOT NULL test_key",
+          "target_table": null,
+          "columns": [
+            "test_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_title_not_null",
+          "type": "n",
+          "definition": "NOT NULL title",
+          "target_table": null,
+          "columns": [
+            "title"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (content_version_id, test_key)",
+          "target_table": null,
+          "columns": [
+            "content_version_id",
+            "test_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_tests_content_version_id_display_order_key",
+          "type": "u",
+          "definition": "UNIQUE (content_version_id, display_order)",
+          "target_table": null,
+          "columns": [
+            "content_version_id",
+            "display_order"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_tests_content_version_id_display_order_key",
+          "definition": "CREATE UNIQUE INDEX repair_tests_content_version_id_display_order_key ON dorobus.repair_tests USING btree (content_version_id, display_order)"
+        },
+        {
+          "name": "repair_tests_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_tests_pkey ON dorobus.repair_tests USING btree (content_version_id, test_key)"
+        }
+      ]
+    },
+    {
+      "name": "repair_trials",
+      "description": "시험 버튼을 눌러 서버가 판정한 한 번. 실패와 나중에 무효가 된 통과도 보존",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": null
+        },
+        {
+          "name": "run_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "test_key",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "request_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "bench_revision",
+          "type": "integer",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "settings_snapshot",
+          "type": "jsonb",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "passed",
+          "type": "boolean",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "tested_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": null
+        },
+        {
+          "name": "invalidated_at",
+          "type": "timestamp with time zone",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_trials_bench_revision_check",
+          "type": "c",
+          "definition": "CHECK ((bench_revision >= 0))",
+          "target_table": null,
+          "columns": [
+            "bench_revision"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_check",
+          "type": "c",
+          "definition": "CHECK (((invalidated_at IS NULL) OR (passed AND (invalidated_at >= tested_at))))",
+          "target_table": null,
+          "columns": [
+            "invalidated_at",
+            "passed",
+            "tested_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_settings_snapshot_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(settings_snapshot) = 'object'::text))",
+          "target_table": null,
+          "columns": [
+            "settings_snapshot"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_content_version_id_test_key_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id, test_key) REFERENCES dorobus.repair_tests(content_version_id, test_key)",
+          "target_table": "repair_tests",
+          "columns": [
+            "content_version_id",
+            "test_key"
+          ],
+          "target_columns": [
+            "content_version_id",
+            "test_key"
+          ]
+        },
+        {
+          "name": "repair_trials_run_id_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (run_id, content_version_id) REFERENCES dorobus.repair_runs(id, content_version_id)",
+          "target_table": "repair_runs",
+          "columns": [
+            "run_id",
+            "content_version_id"
+          ],
+          "target_columns": [
+            "id",
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_trials_bench_revision_not_null",
+          "type": "n",
+          "definition": "NOT NULL bench_revision",
+          "target_table": null,
+          "columns": [
+            "bench_revision"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_passed_not_null",
+          "type": "n",
+          "definition": "NOT NULL passed",
+          "target_table": null,
+          "columns": [
+            "passed"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_request_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL request_id",
+          "target_table": null,
+          "columns": [
+            "request_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_run_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL run_id",
+          "target_table": null,
+          "columns": [
+            "run_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_settings_snapshot_not_null",
+          "type": "n",
+          "definition": "NOT NULL settings_snapshot",
+          "target_table": null,
+          "columns": [
+            "settings_snapshot"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_test_key_not_null",
+          "type": "n",
+          "definition": "NOT NULL test_key",
+          "target_table": null,
+          "columns": [
+            "test_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_tested_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL tested_at",
+          "target_table": null,
+          "columns": [
+            "tested_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_trials_run_id_request_id_key",
+          "type": "u",
+          "definition": "UNIQUE (run_id, request_id)",
+          "target_table": null,
+          "columns": [
+            "run_id",
+            "request_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_trials_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_trials_pkey ON dorobus.repair_trials USING btree (id)"
+        },
+        {
+          "name": "repair_trials_run_id_request_id_key",
+          "definition": "CREATE UNIQUE INDEX repair_trials_run_id_request_id_key ON dorobus.repair_trials USING btree (run_id, request_id)"
+        },
+        {
+          "name": "repair_trials_run_time_idx",
+          "definition": "CREATE INDEX repair_trials_run_time_idx ON dorobus.repair_trials USING btree (run_id, tested_at, id)"
+        }
+      ]
+    },
+    {
+      "name": "repair_wrong_hypotheses",
+      "description": "사건 버전 안의 오답 유형 하나. 최초 판정에서 대표 유형 0~1개를 연결",
+      "columns": [
+        {
+          "name": "content_version_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        },
+        {
+          "name": "refute_clue_key",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "repair_wrong_code_nonempty",
+          "type": "c",
+          "definition": "CHECK ((btrim(code) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_wrong_name_nonempty",
+          "type": "c",
+          "definition": "CHECK ((btrim(name) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_wrong_hypotheses_content_version_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id) REFERENCES dorobus.repair_case_versions(content_version_id)",
+          "target_table": "repair_case_versions",
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": [
+            "content_version_id"
+          ]
+        },
+        {
+          "name": "repair_wrong_refute_clue_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (content_version_id, refute_clue_key) REFERENCES dorobus.repair_clues(content_version_id, clue_key)",
+          "target_table": "repair_clues",
+          "columns": [
+            "content_version_id",
+            "refute_clue_key"
+          ],
+          "target_columns": [
+            "content_version_id",
+            "clue_key"
+          ]
+        },
+        {
+          "name": "repair_wrong_hypotheses_code_not_null",
+          "type": "n",
+          "definition": "NOT NULL code",
+          "target_table": null,
+          "columns": [
+            "code"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_wrong_hypotheses_content_version_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL content_version_id",
+          "target_table": null,
+          "columns": [
+            "content_version_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_wrong_hypotheses_name_not_null",
+          "type": "n",
+          "definition": "NOT NULL name",
+          "target_table": null,
+          "columns": [
+            "name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_wrong_hypotheses_refute_clue_key_not_null",
+          "type": "n",
+          "definition": "NOT NULL refute_clue_key",
+          "target_table": null,
+          "columns": [
+            "refute_clue_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "repair_wrong_hypotheses_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (content_version_id, code)",
+          "target_table": null,
+          "columns": [
+            "content_version_id",
+            "code"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "repair_wrong_hypotheses_pkey",
+          "definition": "CREATE UNIQUE INDEX repair_wrong_hypotheses_pkey ON dorobus.repair_wrong_hypotheses USING btree (content_version_id, code)"
+        }
+      ]
+    },
+    {
+      "name": "reward_claims",
+      "description": "보상 수령",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "보상 수령 기록 고유 번호"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "보상을 받은 사용자"
+        },
+        {
+          "name": "reward_key",
+          "type": "character varying(200)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "어떤 보상인지 구별하는 고정 키. 예: content:q-sensor:first-clear"
+        },
+        {
+          "name": "operation_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "보상 지급 업무 번호. CELL 내역과 같은 번호 사용"
+        },
+        {
+          "name": "cell_amount",
+          "type": "bigint",
+          "not_null": true,
+          "generated": "",
+          "default_value": "0",
+          "description": "실제 지급한 CELL. 스탬프 등만 지급했다면 0"
+        },
+        {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "보상 수령을 확정한 시각"
+        },
+        {
+          "name": "source_repair_run_id",
+          "type": "uuid",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "수리 CELL 지급의 원인 도전. 한 run당 하나의 합산 CELL 보상"
+        },
+        {
+          "name": "source_phase",
+          "type": "text",
+          "not_null": false,
+          "generated": "s",
+          "default_value": "\nCASE\n    WHEN (source_repair_run_id IS NOT NULL) THEN 'completed'::text\n    ELSE NULL::text\nEND",
+          "description": "자동 계산 completed. 미완료 수리 run을 보상으로 연결할 수 없음"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "reward_claims_cell_amount_nonnegative_check",
+          "type": "c",
+          "definition": "CHECK ((cell_amount >= 0))",
+          "target_table": null,
+          "columns": [
+            "cell_amount"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_claims_reward_key_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((reward_key)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "reward_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_claims_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "reward_must_be_finished_fk",
+          "type": "f",
+          "definition": "FOREIGN KEY (source_repair_run_id, user_id, source_phase) REFERENCES dorobus.repair_runs(id, user_id, phase)",
+          "target_table": "repair_runs",
+          "columns": [
+            "source_repair_run_id",
+            "user_id",
+            "source_phase"
+          ],
+          "target_columns": [
+            "id",
+            "user_id",
+            "phase"
+          ]
+        },
+        {
+          "name": "reward_claims_cell_amount_not_null",
+          "type": "n",
+          "definition": "NOT NULL cell_amount",
+          "target_table": null,
+          "columns": [
+            "cell_amount"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_claims_claimed_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL claimed_at",
+          "target_table": null,
+          "columns": [
+            "claimed_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_claims_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_claims_operation_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL operation_id",
+          "target_table": null,
+          "columns": [
+            "operation_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_claims_reward_key_not_null",
+          "type": "n",
+          "definition": "NOT NULL reward_key",
+          "target_table": null,
+          "columns": [
+            "reward_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_claims_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_claims_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_claims_user_reward_key",
+          "type": "u",
+          "definition": "UNIQUE (user_id, reward_key)",
+          "target_table": null,
+          "columns": [
+            "user_id",
+            "reward_key"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "reward_one_per_repair_run_key",
+          "type": "u",
+          "definition": "UNIQUE (source_repair_run_id)",
+          "target_table": null,
+          "columns": [
+            "source_repair_run_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "reward_claims_pkey",
+          "definition": "CREATE UNIQUE INDEX reward_claims_pkey ON dorobus.reward_claims USING btree (id)"
+        },
+        {
+          "name": "reward_claims_user_operation_idx",
+          "definition": "CREATE INDEX reward_claims_user_operation_idx ON dorobus.reward_claims USING btree (user_id, operation_id)"
+        },
+        {
+          "name": "reward_claims_user_reward_key",
+          "definition": "CREATE UNIQUE INDEX reward_claims_user_reward_key ON dorobus.reward_claims USING btree (user_id, reward_key)"
+        },
+        {
+          "name": "reward_one_per_repair_run_key",
+          "definition": "CREATE UNIQUE INDEX reward_one_per_repair_run_key ON dorobus.reward_claims USING btree (source_repair_run_id)"
+        }
+      ]
+    },
+    {
+      "name": "user_items",
+      "description": "보유 가구",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "가구 소유자"
+        },
+        {
+          "name": "item_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "보유한 가구 종류"
+        },
+        {
+          "name": "acquired_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "가구를 얻은 시각"
+        },
+        {
+          "name": "purchase_price_cell",
+          "type": "bigint",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "실제 구매 당시 가격. 구매 이력이 없거나 이관 시 가격을 모르면 NULL"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "user_items_purchase_price_nonnegative_check",
+          "type": "c",
+          "definition": "CHECK (((purchase_price_cell IS NULL) OR (purchase_price_cell >= 0)))",
+          "target_table": null,
+          "columns": [
+            "purchase_price_cell"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "user_items_item_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (item_id) REFERENCES dorobus.items(id) ON DELETE RESTRICT",
+          "target_table": "items",
+          "columns": [
+            "item_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "user_items_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "user_items_acquired_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL acquired_at",
+          "target_table": null,
+          "columns": [
+            "acquired_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "user_items_item_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL item_id",
+          "target_table": null,
+          "columns": [
+            "item_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "user_items_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "user_items_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (user_id, item_id)",
+          "target_table": null,
+          "columns": [
+            "user_id",
+            "item_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "user_items_pkey",
+          "definition": "CREATE UNIQUE INDEX user_items_pkey ON dorobus.user_items USING btree (user_id, item_id)"
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "description": "사용자",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": "gen_random_uuid()",
+          "description": "사용자 고유 번호. 이름이 같은 사람이 있어도 이 값으로 구별"
+        },
+        {
+          "name": "login_id",
+          "type": "character varying(50)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "로그인용 아이디. 예: a1. 등록 전에 앞뒤 공백 제거·영문 소문자화"
+        },
+        {
+          "name": "display_name",
+          "type": "character varying(50)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "화면에 보여 줄 이름. 예: 김도로. 동명이인 허용"
+        },
+        {
+          "name": "role",
+          "type": "character varying(20)",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "역할. student는 학생, teacher는 강사, developer는 전체 조회 담당(002에서 추가). 서버가 부여"
+        },
+        {
+          "name": "auth_subject",
+          "type": "text",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "인증 서비스가 발급한 사용자 식별자. 비밀번호나 로그인 토큰이 아님"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "사용자 계정 기록을 만든 시각"
+        },
+        {
+          "name": "birth_date",
+          "type": "date",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "생년월일. 계정 만들 때 필수 입력. 미래 날짜 금지는 register_user와 서버가 검사(CHECK에 current_date를 쓰지 않음)"
+        },
+        {
+          "name": "password_hash",
+          "type": "text",
+          "not_null": false,
+          "generated": "",
+          "default_value": null,
+          "description": "자체 로그인 비밀번호 해시(scrypt$N$r$p$salt$hash). 외부 로그인 계정은 NULL. 원문 저장 금지"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "users_auth_subject_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim(auth_subject) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "auth_subject"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_birth_date_range_check",
+          "type": "c",
+          "definition": "CHECK ((birth_date >= '1900-01-01'::date))",
+          "target_table": null,
+          "columns": [
+            "birth_date"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_display_name_nonempty_check",
+          "type": "c",
+          "definition": "CHECK ((btrim((display_name)::text) <> ''::text))",
+          "target_table": null,
+          "columns": [
+            "display_name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_login_id_normalized_check",
+          "type": "c",
+          "definition": "CHECK ((((login_id)::text <> ''::text) AND ((login_id)::text = lower(btrim((login_id)::text)))))",
+          "target_table": null,
+          "columns": [
+            "login_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_password_hash_format_check",
+          "type": "c",
+          "definition": "CHECK (((password_hash IS NULL) OR (password_hash ~~ 'scrypt$%'::text)))",
+          "target_table": null,
+          "columns": [
+            "password_hash"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_role_allowed_check",
+          "type": "c",
+          "definition": "CHECK (((role)::text = ANY ((ARRAY['student'::character varying, 'teacher'::character varying, 'developer'::character varying])::text[])))",
+          "target_table": null,
+          "columns": [
+            "role"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_auth_subject_not_null",
+          "type": "n",
+          "definition": "NOT NULL auth_subject",
+          "target_table": null,
+          "columns": [
+            "auth_subject"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_birth_date_not_null",
+          "type": "n",
+          "definition": "NOT NULL birth_date",
+          "target_table": null,
+          "columns": [
+            "birth_date"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_created_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL created_at",
+          "target_table": null,
+          "columns": [
+            "created_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_display_name_not_null",
+          "type": "n",
+          "definition": "NOT NULL display_name",
+          "target_table": null,
+          "columns": [
+            "display_name"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL id",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_login_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL login_id",
+          "target_table": null,
+          "columns": [
+            "login_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_role_not_null",
+          "type": "n",
+          "definition": "NOT NULL role",
+          "target_table": null,
+          "columns": [
+            "role"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)",
+          "target_table": null,
+          "columns": [
+            "id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_auth_subject_key",
+          "type": "u",
+          "definition": "UNIQUE (auth_subject)",
+          "target_table": null,
+          "columns": [
+            "auth_subject"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "users_login_id_key",
+          "type": "u",
+          "definition": "UNIQUE (login_id)",
+          "target_table": null,
+          "columns": [
+            "login_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "users_auth_subject_key",
+          "definition": "CREATE UNIQUE INDEX users_auth_subject_key ON dorobus.users USING btree (auth_subject)"
+        },
+        {
+          "name": "users_login_id_key",
+          "definition": "CREATE UNIQUE INDEX users_login_id_key ON dorobus.users USING btree (login_id)"
+        },
+        {
+          "name": "users_pkey",
+          "definition": "CREATE UNIQUE INDEX users_pkey ON dorobus.users USING btree (id)"
+        }
+      ]
+    },
+    {
+      "name": "wallets",
+      "description": "CELL 지갑",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true,
+          "generated": "",
+          "default_value": null,
+          "description": "지갑 주인"
+        },
+        {
+          "name": "balance",
+          "type": "bigint",
+          "not_null": true,
+          "generated": "",
+          "default_value": "0",
+          "description": "현재 사용 가능한 CELL. 예: 350"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true,
+          "generated": "",
+          "default_value": "now()",
+          "description": "잔액을 마지막으로 바꾼 시각"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "wallets_balance_nonnegative_check",
+          "type": "c",
+          "definition": "CHECK ((balance >= 0))",
+          "target_table": null,
+          "columns": [
+            "balance"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "wallets_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES dorobus.users(id) ON DELETE RESTRICT",
+          "target_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "wallets_balance_not_null",
+          "type": "n",
+          "definition": "NOT NULL balance",
+          "target_table": null,
+          "columns": [
+            "balance"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "wallets_updated_at_not_null",
+          "type": "n",
+          "definition": "NOT NULL updated_at",
+          "target_table": null,
+          "columns": [
+            "updated_at"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "wallets_user_id_not_null",
+          "type": "n",
+          "definition": "NOT NULL user_id",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        },
+        {
+          "name": "wallets_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (user_id)",
+          "target_table": null,
+          "columns": [
+            "user_id"
+          ],
+          "target_columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "wallets_pkey",
+          "definition": "CREATE UNIQUE INDEX wallets_pkey ON dorobus.wallets USING btree (user_id)"
+        }
+      ]
+    }
+  ],
+  "triggers": [
+    {
+      "name": "player_profiles_touch_updated_at",
+      "table_name": "player_profiles",
+      "definition": "CREATE TRIGGER player_profiles_touch_updated_at BEFORE UPDATE ON dorobus.player_profiles FOR EACH ROW EXECUTE FUNCTION dorobus.touch_updated_at()"
+    },
+    {
+      "name": "repair_runs_identity_guard",
+      "table_name": "repair_runs",
+      "definition": "CREATE TRIGGER repair_runs_identity_guard BEFORE UPDATE ON dorobus.repair_runs FOR EACH ROW EXECUTE FUNCTION dorobus.guard_repair_run_identity()"
+    },
+    {
+      "name": "wallets_touch_updated_at",
+      "table_name": "wallets",
+      "definition": "CREATE TRIGGER wallets_touch_updated_at BEFORE UPDATE ON dorobus.wallets FOR EACH ROW EXECUTE FUNCTION dorobus.touch_updated_at()"
+    }
+  ],
+  "table_count": 28,
+  "column_count": 208
+}

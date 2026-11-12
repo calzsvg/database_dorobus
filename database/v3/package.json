@@ -1,0 +1,12 @@
+{
+  "name": "dorobus-final-db-design",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node validation/verify.mjs && node validation/compare-schema.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.14"
+  }
+}

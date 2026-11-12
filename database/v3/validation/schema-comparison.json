@@ -1,0 +1,171 @@
+{
+  "generated_at": "2026-11-12T07:15:11.770Z",
+  "checks": [
+    {
+      "name": "일일 전용 CHECK 2개만 삭제되고 새 제약은 없음",
+      "pass": true
+    },
+    {
+      "name": "일일 예외를 제거한 CHECK 4개만 변경, 그 외 PK·UNIQUE·FK·CHECK 이름·정의 전부 동일",
+      "pass": true
+    },
+    {
+      "name": "변경 CHECK는 daily 허용과 예외 제거에 한정",
+      "pass": true
+    },
+    {
+      "name": "수리 최초 완료·면허·보상 보호 FK/CHECK/UNIQUE 모두 그대로 유지",
+      "pass": true
+    },
+    {
+      "name": "28개 테이블 유지, business_date 컬럼만 삭제; 다른 타입·필수·기본값·생성식 동일",
+      "pass": true
+    },
+    {
+      "name": "일일 전용 인덱스 1개 삭제, 진행 중 도전 인덱스 조건만 변경",
+      "pass": true
+    },
+    {
+      "name": "트리거 정의와 개수 동일, 식별자 보호 함수에서 business_date 비교만 삭제",
+      "pass": true
+    },
+    {
+      "name": "공통 SQL은 범위 COMMENT만 변경, 면허 FK·발급 함수·권한·선택 SQL은 바이트 동일",
+      "pass": true
+    },
+    {
+      "name": "남은 9개 사건의 모든 정의·식별자·규칙·보상과 부품·단서·시험은 v2와 동일",
+      "pass": true
+    },
+    {
+      "name": "선택 SQL 적용 후에도 일일 인덱스 외 추가 인덱스 차이 없음",
+      "pass": true
+    }
+  ],
+  "limitations": [
+    "PGlite 단일 연결의 독립 메모리 DB 2개에 실제 SQL과 각 버전 시드를 적재해 비교. 실제 PostgreSQL 16.15 실행 또는 다중 연결 검증 아님.",
+    "baseline-v2는 원본 비교 전용. 일일 수리가 포함되지만 v3 설치 대상이 아님."
+  ],
+  "engine": "PostgreSQL 18.6 (PGlite 0.5.14) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.5 (1db513782be24469589d7cb8a1f1834e9a33f271), 32-bit",
+  "before": {
+    "tables": 28,
+    "columns": 207,
+    "primary_keys": 28,
+    "unique_constraints": 35,
+    "foreign_keys": 52,
+    "checks": 85,
+    "not_null_columns": 161,
+    "constraints_excluding_not_null": 200,
+    "catalog_constraints_including_not_null": 361,
+    "indexes": 76,
+    "user_triggers": 3,
+    "repair_runs": {
+      "unique_constraints": 6,
+      "indexes": 10,
+      "constraints_excluding_not_null": 20,
+      "indexes_with_optional": 11
+    },
+    "repair_cases": 14,
+    "indexes_with_optional": 78
+  },
+  "after": {
+    "tables": 28,
+    "columns": 206,
+    "primary_keys": 28,
+    "unique_constraints": 35,
+    "foreign_keys": 52,
+    "checks": 83,
+    "not_null_columns": 161,
+    "constraints_excluding_not_null": 198,
+    "catalog_constraints_including_not_null": 359,
+    "indexes": 75,
+    "user_triggers": 3,
+    "repair_runs": {
+      "unique_constraints": 6,
+      "indexes": 9,
+      "constraints_excluding_not_null": 19,
+      "indexes_with_optional": 10
+    },
+    "repair_cases": 9,
+    "indexes_with_optional": 77
+  },
+  "constraints": {
+    "removed": [
+      {
+        "table": "learning_attempts",
+        "name": "attempts_daily_verdict_check",
+        "type": "c",
+        "definition": "CHECK (((repair_case_role IS DISTINCT FROM 'daily'::text) OR ((verdict = ANY (ARRAY['correct'::text, 'wrong'::text])) AND (judge_source = 'rule'::text) AND (wrong_hypothesis_code IS NULL))))",
+        "target_table": null,
+        "columns": [
+          "repair_case_role",
+          "verdict",
+          "judge_source",
+          "wrong_hypothesis_code"
+        ],
+        "target_columns": []
+      },
+      {
+        "table": "repair_runs",
+        "name": "repair_runs_check",
+        "type": "c",
+        "definition": "CHECK ((((case_role = 'daily'::text) AND (business_date IS NOT NULL) AND (phase <> 'bench'::text) AND (business_date = ((started_at AT TIME ZONE 'UTC'::text))::date)) OR ((case_role <> 'daily'::text) AND (business_date IS NULL))))",
+        "target_table": null,
+        "columns": [
+          "case_role",
+          "business_date",
+          "phase",
+          "started_at"
+        ],
+        "target_columns": []
+      }
+    ],
+    "added": [],
+    "changed": [
+      {
+        "table": "learning_attempts",
+        "name": "attempts_repair_answer_shape_check",
+        "before": "CHECK (((repair_run_id IS NULL) OR COALESCE(\nCASE\n    WHEN (repair_case_role = 'daily'::text) THEN ((answer_redacted_at IS NULL) AND (jsonb_typeof((answer -> 'option_id'::text)) = 'string'::text) AND (btrim((answer ->> 'option_id'::text)) <> ''::text) AND ((char_length((answer ->> 'option_id'::text)) >= 1) AND (char_length((answer ->> 'option_id'::text)) <= 80)) AND (NOT (answer ? 'text'::text)))\n    ELSE ((NOT (answer ? 'option_id'::text)) AND (((answer_redacted_at IS NULL) AND (jsonb_typeof((answer -> 'text'::text)) = 'string'::text) AND (btrim((answer ->> 'text'::text)) <> ''::text) AND ((char_length((answer ->> 'text'::text)) >= 1) AND (char_length((answer ->> 'text'::text)) <= 400))) OR ((answer_redacted_at IS NOT NULL) AND (answer_redacted_at >= submitted_at) AND (NOT (answer ? 'text'::text)))))\nEND, false)))",
+        "after": "CHECK (((repair_run_id IS NULL) OR COALESCE(((NOT (answer ? 'option_id'::text)) AND (((answer_redacted_at IS NULL) AND (jsonb_typeof((answer -> 'text'::text)) = 'string'::text) AND (btrim((answer ->> 'text'::text)) <> ''::text) AND ((char_length((answer ->> 'text'::text)) >= 1) AND (char_length((answer ->> 'text'::text)) <= 400))) OR ((answer_redacted_at IS NOT NULL) AND (answer_redacted_at >= submitted_at) AND (NOT (answer ? 'text'::text))))), false)))"
+      },
+      {
+        "table": "learning_attempts",
+        "name": "attempts_repair_metadata_check",
+        "before": "CHECK ((((repair_run_id IS NULL) AND (repair_case_role IS NULL) AND (verdict IS NULL) AND (judge_source IS NULL) AND (rule_version IS NULL) AND (prompt_version IS NULL) AND (model_id IS NULL) AND (fallback_reason IS NULL) AND (feedback_text IS NULL) AND (attempt_no IS NULL) AND (wrong_hypothesis_code IS NULL) AND (answer_redacted_at IS NULL)) OR ((repair_run_id IS NOT NULL) AND (repair_case_role IS NOT NULL) AND (repair_case_role = ANY (ARRAY['onboarding'::text, 'festival'::text, 'finale'::text, 'remote'::text, 'daily'::text])) AND (verdict IS NOT NULL) AND (verdict = ANY (ARRAY['correct'::text, 'partial'::text, 'wrong'::text, 'needs'::text, 'unclear'::text])) AND (judge_source IS NOT NULL) AND (judge_source = ANY (ARRAY['rule'::text, 'model'::text, 'hybrid'::text])) AND (rule_version IS NOT NULL) AND (btrim(rule_version) <> ''::text) AND (attempt_no IS NOT NULL) AND (attempt_no >= 1) AND (is_correct = (verdict = 'correct'::text)) AND ((scope)::text = 'activity'::text) AND (step_key IS NULL) AND ((judge_source = 'rule'::text) OR ((prompt_version IS NOT NULL) AND (model_id IS NOT NULL))))))",
+        "after": "CHECK ((((repair_run_id IS NULL) AND (repair_case_role IS NULL) AND (verdict IS NULL) AND (judge_source IS NULL) AND (rule_version IS NULL) AND (prompt_version IS NULL) AND (model_id IS NULL) AND (fallback_reason IS NULL) AND (feedback_text IS NULL) AND (attempt_no IS NULL) AND (wrong_hypothesis_code IS NULL) AND (answer_redacted_at IS NULL)) OR ((repair_run_id IS NOT NULL) AND (repair_case_role IS NOT NULL) AND (repair_case_role = ANY (ARRAY['onboarding'::text, 'festival'::text, 'finale'::text, 'remote'::text])) AND (verdict IS NOT NULL) AND (verdict = ANY (ARRAY['correct'::text, 'partial'::text, 'wrong'::text, 'needs'::text, 'unclear'::text])) AND (judge_source IS NOT NULL) AND (judge_source = ANY (ARRAY['rule'::text, 'model'::text, 'hybrid'::text])) AND (rule_version IS NOT NULL) AND (btrim(rule_version) <> ''::text) AND (attempt_no IS NOT NULL) AND (attempt_no >= 1) AND (is_correct = (verdict = 'correct'::text)) AND ((scope)::text = 'activity'::text) AND (step_key IS NULL) AND ((judge_source = 'rule'::text) OR ((prompt_version IS NOT NULL) AND (model_id IS NOT NULL))))))"
+      },
+      {
+        "table": "repair_case_versions",
+        "name": "repair_case_versions_case_role_check",
+        "before": "CHECK ((case_role = ANY (ARRAY['onboarding'::text, 'festival'::text, 'finale'::text, 'remote'::text, 'daily'::text])))",
+        "after": "CHECK ((case_role = ANY (ARRAY['onboarding'::text, 'festival'::text, 'finale'::text, 'remote'::text])))"
+      },
+      {
+        "table": "repair_runs",
+        "name": "repair_run_regular_diagnosis_check",
+        "before": "CHECK (((case_role = 'daily'::text) OR (phase = 'investigation'::text) OR (first_diagnosed_at IS NOT NULL)))",
+        "after": "CHECK (((phase = 'investigation'::text) OR (first_diagnosed_at IS NOT NULL)))"
+      }
+    ]
+  },
+  "index_changes": {
+    "removed": [
+      {
+        "table": "repair_runs",
+        "name": "repair_runs_daily_once_idx",
+        "definition": "CREATE UNIQUE INDEX repair_runs_daily_once_idx ON dorobus.repair_runs USING btree (user_id, content_id, business_date) WHERE (case_role = 'daily'::text)"
+      }
+    ],
+    "added": [],
+    "changed": [
+      {
+        "table": "repair_runs",
+        "name": "repair_runs_one_open_regular_idx",
+        "before": "CREATE UNIQUE INDEX repair_runs_one_open_regular_idx ON dorobus.repair_runs USING btree (user_id, content_id) WHERE ((case_role <> 'daily'::text) AND (phase <> 'completed'::text))",
+        "after": "CREATE UNIQUE INDEX repair_runs_one_open_regular_idx ON dorobus.repair_runs USING btree (user_id, content_id) WHERE (phase <> 'completed'::text)"
+      }
+    ]
+  },
+  "passed": 10,
+  "failed": 0
+}

@@ -1,0 +1,417 @@
+{
+  "generated_at": "2026-11-12T07:15:10.575Z",
+  "engine": "PostgreSQL 18.6 (PGlite 0.5.14) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.5 (1db513782be24469589d7cb8a1f1834e9a33f271), 32-bit",
+  "passed": 101,
+  "failed": 0,
+  "results": [
+    {
+      "name": "공통 15 + 수리 12 + 면허 1 = 28개 / 208개 컬럼 (v3 206 + 007 birth_date + 008 password_hash)",
+      "pass": true
+    },
+    {
+      "name": "현재 소스의 도입 1·축제 6·최종 1·원격 1개 사건 적재",
+      "pass": true
+    },
+    {
+      "name": "본편 스토리 유형은 신규 콘텐츠로 등록 불가",
+      "pass": true
+    },
+    {
+      "name": "기존 공통 SQL 제약 검증 통과",
+      "pass": true
+    },
+    {
+      "name": "면허 없는 일반 수리 시작 차단",
+      "pass": true
+    },
+    {
+      "name": "면허 없이 자동차 도입 사건 시작, 동일 시작 요청 재사용",
+      "pass": true
+    },
+    {
+      "name": "동일 시작 키로 다른 사건 요청 차단",
+      "pass": true
+    },
+    {
+      "name": "다른 사용자의 도전 조회 차단",
+      "pass": true
+    },
+    {
+      "name": "미관찰 단서를 답안 근거로 첨부하면 거부",
+      "pass": true
+    },
+    {
+      "name": "직접 SQL에서도 무면허 일반 도전 FK 거부",
+      "pass": true
+    },
+    {
+      "name": "생성 컬럼에 NULL을 지정해 면허 검사 우회 불가",
+      "pass": true
+    },
+    {
+      "name": "미완료 자동차 도전을 면허 근거로 등록 불가",
+      "pass": true
+    },
+    {
+      "name": "미완료 도전을 최초 완료로 등록 불가",
+      "pass": true
+    },
+    {
+      "name": "미완료 도전에 보상 수령 등록 불가",
+      "pass": true
+    },
+    {
+      "name": "case_role='daily' 수리 정의 INSERT는 허용값 CHECK로 거부",
+      "pass": true
+    },
+    {
+      "name": "수리 제출 option_id 답안 단독 형식은 DB CHECK로 거부",
+      "pass": true
+    },
+    {
+      "name": "수리 제출 option_id 답안 혼합 형식은 DB CHECK로 거부",
+      "pass": true
+    },
+    {
+      "name": "서비스도 optionId 또는 option_id 답안 형식을 거부",
+      "pass": true
+    },
+    {
+      "name": "오답 제출을 원인 해결 행으로 연결 불가",
+      "pass": true
+    },
+    {
+      "name": "가설 판정 성공과 동일 제출 요청 중복 방지",
+      "pass": true
+    },
+    {
+      "name": "동일 제출 키에 답안 변경 시 거부",
+      "pass": true
+    },
+    {
+      "name": "시험 미통과 상태의 완료 거부",
+      "pass": true
+    },
+    {
+      "name": "오래된 화면 버전에서 설정 변경 거부",
+      "pass": true
+    },
+    {
+      "name": "작업대 실패 시험도 보존",
+      "pass": true
+    },
+    {
+      "name": "시험 요청 재전송은 동일 시험 결과 반환",
+      "pass": true
+    },
+    {
+      "name": "시험 요청 키 재사용으로 다른 시험 실행 거부",
+      "pass": true
+    },
+    {
+      "name": "설정 변경은 관련 시험만 무효화",
+      "pass": true
+    },
+    {
+      "name": "설정을 되돌려도 무효 시험은 자동 복구하지 않음",
+      "pass": true
+    },
+    {
+      "name": "자동차 완료·최초 완료·운전면허 한 트랜잭션 저장",
+      "pass": true
+    },
+    {
+      "name": "case_role='daily' 수리 도전 INSERT는 정의 역할 FK로 거부",
+      "pass": true
+    },
+    {
+      "name": "v1의 컬럼 생략 방식으로 수리 최초 완료 등록 거부 (런타임)",
+      "pass": true
+    },
+    {
+      "name": "onboarding: 도전 NULL인 수리 완료 거부 (런타임)",
+      "pass": true
+    },
+    {
+      "name": "festival: 도전 NULL인 수리 완료 거부 (런타임)",
+      "pass": true
+    },
+    {
+      "name": "finale: 도전 NULL인 수리 완료 거부 (런타임)",
+      "pass": true
+    },
+    {
+      "name": "remote: 도전 NULL인 수리 완료 거부 (런타임)",
+      "pass": true
+    },
+    {
+      "name": "수리 완료를 quiz로 위장하고 도전을 NULL로 입력해도 실제 종류 FK 거부",
+      "pass": true
+    },
+    {
+      "name": "완료 종류 NULL은 CHECK의 NULL 통과로 우회 불가",
+      "pass": true
+    },
+    {
+      "name": "정의에 없는 임의 완료 종류도 거부",
+      "pass": true
+    },
+    {
+      "name": "quiz: 정상 비수리 완료는 도전 없이 등록 (런타임)",
+      "pass": true
+    },
+    {
+      "name": "world: 정상 비수리 완료는 도전 없이 등록 (런타임)",
+      "pass": true
+    },
+    {
+      "name": "homework: 정상 비수리 완료는 도전 없이 등록 (런타임)",
+      "pass": true
+    },
+    {
+      "name": "coding_challenge: 정상 비수리 완료는 도전 없이 등록 (런타임)",
+      "pass": true
+    },
+    {
+      "name": "비수리 콘텐츠에 수리 상세 정의를 붙여 종류 위장 불가",
+      "pass": true
+    },
+    {
+      "name": "수리 상세의 자동 종류에 NULL을 직접 써서 우회 불가",
+      "pass": true
+    },
+    {
+      "name": "기존 수리 정의의 실제 contents.kind를 quiz로 변경 불가 (소유자 DML)",
+      "pass": true
+    },
+    {
+      "name": "런타임 역할은 콘텐츠 종류 정의 UPDATE 권한 없음",
+      "pass": true
+    },
+    {
+      "name": "본인의 같은 콘텐츠·버전 완료 도전은 직접 INSERT도 허용",
+      "pass": true
+    },
+    {
+      "name": "다른 학생의 완료 도전 연결 거부 (강한 완료 FK)",
+      "pass": true
+    },
+    {
+      "name": "다른 콘텐츠의 완료 도전 연결 거부 (강한 완료 FK)",
+      "pass": true
+    },
+    {
+      "name": "같은 콘텐츠의 다른 버전에 완료 도전 연결 거부",
+      "pass": true
+    },
+    {
+      "name": "미완료 도전 연결 거부 (런타임·강한 완료 FK)",
+      "pass": true
+    },
+    {
+      "name": "완료 source_phase에 NULL을 직접 입력해 강한 FK 우회 불가",
+      "pass": true
+    },
+    {
+      "name": "완료 도전 연결을 나중에 NULL로 변경해도 CHECK 거부 (소유자 DML)",
+      "pass": true
+    },
+    {
+      "name": "완료 기록의 종류와 도전을 함께 위장 UPDATE해도 FK 거부",
+      "pass": true
+    },
+    {
+      "name": "비수리 완료에 수리 도전을 연결하는 혼합 입력 거부",
+      "pass": true
+    },
+    {
+      "name": "약한 보상 FK 제거 후에도 다른 학생 완료 도전 보상 거부",
+      "pass": true
+    },
+    {
+      "name": "약한 보상 FK 제거 후에도 미완료 도전 보상 거부",
+      "pass": true
+    },
+    {
+      "name": "보상 source_phase NULL 직접 입력 우회 거부",
+      "pass": true
+    },
+    {
+      "name": "같은 완료 도전에 다른 보상 키를 사용해도 중복 보상 거부",
+      "pass": true
+    },
+    {
+      "name": "완료의 근거 도전을 미완료로 되돌리면 참조 FK가 거부",
+      "pass": true
+    },
+    {
+      "name": "완료의 근거 도전 삭제 거부 (소유자 DML)",
+      "pass": true
+    },
+    {
+      "name": "완료 재호출은 기존 결과 반환, 면허 중복 발급 없음",
+      "pass": true
+    },
+    {
+      "name": "완료 도전 변경 거부",
+      "pass": true
+    },
+    {
+      "name": "서버 런타임은 면허 직접 INSERT 불가",
+      "pass": true
+    },
+    {
+      "name": "면허를 다른 사용자에게 귀속 불가",
+      "pass": true
+    },
+    {
+      "name": "입장 면허와 원격 자격 분리",
+      "pass": true
+    },
+    {
+      "name": "퍼레이드 입장에 축제 최초 완료 4건 요구",
+      "pass": true
+    },
+    {
+      "name": "사파리 선행 조건 미충족 단서 숨김·직접 조사 차단",
+      "pass": true
+    },
+    {
+      "name": "도움으로 열린 단서 저장·재접속 복원, 발견과 구분",
+      "pass": true
+    },
+    {
+      "name": "도움 화면 표시 확인은 별도 기록",
+      "pass": true
+    },
+    {
+      "name": "현재 사파리 콘텐츠 전 과정 완료",
+      "pass": true
+    },
+    {
+      "name": "부품 해금은 최초 완료로 계산하고 수강·과제를 요구하지 않음",
+      "pass": true
+    },
+    {
+      "name": "명시적 재도전은 새 도전·빈 조사 기록, 기존 면허 유지",
+      "pass": true
+    },
+    {
+      "name": "carousel 최신 사건 완료·부품 해금",
+      "pass": true
+    },
+    {
+      "name": "food 최신 사건 완료·부품 해금",
+      "pass": true
+    },
+    {
+      "name": "서로 다른 축제 3종 완료만으로는 퍼레이드 입장 거부",
+      "pass": true
+    },
+    {
+      "name": "viking 최신 사건 완료·부품 해금",
+      "pass": true
+    },
+    {
+      "name": "서로 다른 축제 정확히 4종 완료 시 퍼레이드 입장 허용",
+      "pass": true
+    },
+    {
+      "name": "coaster 최신 사건 완료·부품 해금",
+      "pass": true
+    },
+    {
+      "name": "sign 최신 사건 완료·부품 해금",
+      "pass": true
+    },
+    {
+      "name": "신뢰할 수 있는 축제 최초 완료 6개가 부품 정확히 6종 해금",
+      "pass": true
+    },
+    {
+      "name": "퍼레이드는 부분 정답으로 원인별 해결 누적",
+      "pass": true
+    },
+    {
+      "name": "퍼레이드 최종 완료 후 원격 자격 해금",
+      "pass": true
+    },
+    {
+      "name": "도움 없이 선행 단서 관찰만으로도 다음 조사 해금",
+      "pass": true
+    },
+    {
+      "name": "대체 부품을 보유하면 미보유 부품 선택은 잠김",
+      "pass": true
+    },
+    {
+      "name": "9개 실제 사건 reward_cell=0, 정상 전체 완료에서 보상·원장 없음",
+      "pass": true
+    },
+    {
+      "name": "임시 양수 보상: 원장 직후 강제 실패 시 완료·면허·보상·원장·지갑 전부 롤백",
+      "pass": true
+    },
+    {
+      "name": "임시 양수 보상: 일반 최초 완료에서만 보상 지급",
+      "pass": true
+    },
+    {
+      "name": "일반 완료 재시도 두 건에도 보상 한 번 유지 (단일 연결 직렬화)",
+      "pass": true
+    },
+    {
+      "name": "임시 양수 보상: 명시적 재도전 완료는 추가 지급 없음",
+      "pass": true
+    },
+    {
+      "name": "임시 보상 정의 복구 후 사건 9개 모두 0 CELL",
+      "pass": true
+    },
+    {
+      "name": "보상 수령·CELL 원장·지갑 합계 일치",
+      "pass": true
+    },
+    {
+      "name": "정답 규칙·숨겨진 단서 본문은 조회 응답에 미포함",
+      "pass": true
+    },
+    {
+      "name": "생년월일 없이 사용자 직접 INSERT 거부 (NOT NULL)",
+      "pass": true
+    },
+    {
+      "name": "1900-01-01 이전 생년월일 거부",
+      "pass": true
+    },
+    {
+      "name": "만 나이 계산: 생일 전날·당일·윤년 2월 29일생",
+      "pass": true
+    },
+    {
+      "name": "서버 런타임은 users 직접 INSERT 불가, register_user로만 학생 가입",
+      "pass": true
+    },
+    {
+      "name": "register_user: 생년월일 누락·미래 날짜·아이디 중복 거부",
+      "pass": true
+    },
+    {
+      "name": "008 register_local_user: 해시·local 주체 저장, 해시 형식 아니면 거부",
+      "pass": true
+    },
+    {
+      "name": "나이 뷰는 auth_subject를 노출하지 않음",
+      "pass": true
+    },
+    {
+      "name": "동봉한 분석 조회문 7개 실행 가능",
+      "pass": true
+    }
+  ],
+  "common_sql_notices": [],
+  "limitations": [
+    "PGlite 단일 연결 검증. 독립 PostgreSQL 서버의 여러 연결 경쟁·교착·권한 배포는 미검증.",
+    "인증·HTTP·프론트엔드·Gemini 연동 및 실제 운영 DB 전환은 수행하지 않음."
+  ]
+}

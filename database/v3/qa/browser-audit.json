@@ -1,0 +1,119 @@
+{
+  "generated_at": "2026-11-12T03:42:18.139Z",
+  "mode": "file:// offline",
+  "checks": [
+    {
+      "name": "네트워크 오프라인에서 index → 상세설명 리다이렉트와 28개 명세 표시",
+      "pass": true
+    },
+    {
+      "name": "변경 수치와 보장 범위 화면 표시",
+      "pass": true
+    },
+    {
+      "name": "제약 이름 검색·펼치기·접기 동작",
+      "pass": true
+    },
+    {
+      "name": "테이블 바로가기 클릭 시 검색 초기화·대상 펼치기",
+      "pass": true
+    },
+    {
+      "name": "ERD 확대·키보드 관계 강조·화면 맞춤",
+      "pass": true
+    },
+    {
+      "name": "상대 파일 링크 전부 존재하며 오프라인 브라우저로 열림",
+      "pass": true
+    },
+    {
+      "name": "390×844 모바일 표시·가로 본문 넘침 없음·검색 동작",
+      "pass": true
+    },
+    {
+      "name": "외부 네트워크 요청·페이지 JavaScript 오류 없음",
+      "pass": true
+    }
+  ],
+  "external_requests": [],
+  "console_errors": [],
+  "input_hashes": {
+    "상세설명.html": "d228d9cb0de561e9ca15624a8e27d24676dc839e5627083e7a390ef7a6db8e41",
+    "index.html": "a7b1cac2c5ebce6f9af38105dd06089457d4ef77c8ae1ab1693ca1f8f4032571",
+    "erd/full-erd.svg": "2bc113d62c5edb2a89964212ee310ca3a431a5a2fb3d283a205fc9ee7a37ede2",
+    "erd/progression.svg": "1b189c9f494260236c8c35a04e3d28ecfa023290fe92aa8f8477ba1429f5e30e"
+  },
+  "browser_version": "157.0.4341.42",
+  "local_links": [
+    {
+      "file": "README.txt",
+      "status": "opened"
+    },
+    {
+      "file": "erd/full-erd.svg",
+      "status": "opened"
+    },
+    {
+      "file": "erd/full-erd.mmd",
+      "status": "opened"
+    },
+    {
+      "file": "docs/design-notes.txt",
+      "status": "opened"
+    },
+    {
+      "file": "docs/v3-changes.txt",
+      "status": "opened"
+    },
+    {
+      "file": "docs/v2-to-v3.diff",
+      "status": "opened"
+    },
+    {
+      "file": "validation/schema-comparison.json",
+      "status": "opened"
+    },
+    {
+      "file": "examples/001_content.sql",
+      "status": "download; file bytes checked"
+    },
+    {
+      "file": "source/game-snapshot.json",
+      "status": "opened"
+    },
+    {
+      "file": "server/repair-service.mjs",
+      "status": "opened"
+    },
+    {
+      "file": "examples/002_analysis.sql",
+      "status": "download; file bytes checked"
+    },
+    {
+      "file": "examples/verified-play.json",
+      "status": "opened"
+    },
+    {
+      "file": "docs/runtime-guide.txt",
+      "status": "opened"
+    },
+    {
+      "file": "validation/seed-validation.json",
+      "status": "opened"
+    },
+    {
+      "file": "validation/results.json",
+      "status": "opened"
+    },
+    {
+      "file": "validation/verify.mjs",
+      "status": "opened"
+    },
+    {
+      "file": "validation/schema-metadata.json",
+      "status": "opened"
+    }
+  ],
+  "passed": 8,
+  "failed": 0
+}

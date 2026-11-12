@@ -1,0 +1,88 @@
+{
+  "schema_version": "v3",
+  "kind_consistency": "PASS: all repair definitions reference repair_case; generated content_kind is omitted",
+  "checks": [
+    {
+      "case": "repair:car",
+      "role": "onboarding",
+      "clues": 10,
+      "problems": 1,
+      "tests": 2,
+      "status": "PASS"
+    },
+    {
+      "case": "repair:carousel",
+      "role": "festival",
+      "clues": 9,
+      "problems": 1,
+      "tests": 2,
+      "status": "PASS"
+    },
+    {
+      "case": "repair:safari",
+      "role": "festival",
+      "clues": 9,
+      "problems": 1,
+      "tests": 2,
+      "status": "PASS"
+    },
+    {
+      "case": "repair:food",
+      "role": "festival",
+      "clues": 10,
+      "problems": 1,
+      "tests": 2,
+      "status": "PASS"
+    },
+    {
+      "case": "repair:viking",
+      "role": "festival",
+      "clues": 10,
+      "problems": 1,
+      "tests": 2,
+      "status": "PASS"
+    },
+    {
+      "case": "repair:coaster",
+      "role": "festival",
+      "clues": 10,
+      "problems": 1,
+      "tests": 2,
+      "status": "PASS"
+    },
+    {
+      "case": "repair:sign",
+      "role": "festival",
+      "clues": 11,
+      "problems": 1,
+      "tests": 2,
+      "status": "PASS"
+    },
+    {
+      "case": "repair:parade",
+      "role": "finale",
+      "clues": 8,
+      "problems": 4,
+      "tests": 2,
+      "status": "PASS"
+    },
+    {
+      "case": "repair:delivery",
+      "role": "remote",
+      "clues": 4,
+      "problems": 1,
+      "tests": 2,
+      "status": "PASS"
+    }
+  ],
+  "counts": {
+    "parts": 6,
+    "contents": 9,
+    "content_versions": 9,
+    "repair_case_versions": 9,
+    "repair_clues": 81,
+    "repair_problems": 12,
+    "repair_tests": 18,
+    "repair_wrong_hypotheses": 29
+  }
+}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Header.jsx'
 import { useStore } from '../store.jsx'
+import { MIN_BIRTH_DATE, ageOn, todayInSeoul } from '../accounts.js'
 
 function BusArt() {
   return (
@@ -57,27 +58,92 @@ function BusArt() {
   )
 }
 
+function EyeIcon({ show }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+      {!show && <path d="M4 4l16 16" />}
+    </svg>
+  )
+}
+
+// 학생 회원가입. 생년월일은 필수이며 입력하면 만 나이를 바로 보여 준다.
+function SignupForm({ onBack }) {
+  const { signup } = useStore()
+  const navigate = useNavigate()
+  const [form, setForm] = useState({ id: '', name: '', password: '', passwordConfirm: '', birthDate: '' })
+  const [show, setShow] = useState(false)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const today = todayInSeoul()
+  const set = (key) => (e) => { setForm((f) => ({ ...f, [key]: e.target.value })); setError('') }
+  const age = form.birthDate && form.birthDate >= MIN_BIRTH_DATE && form.birthDate <= today ? ageOn(form.birthDate, today) : null
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true)
+    const err = await signup(form)
+    setBusy(false)
+    if (err) setError(err)
+    else navigate('/', { replace: true })
+  }
+
+  return (
+    <form className="login-form" onSubmit={submit} noValidate>
+      <h2>회원가입</h2>
+      <p className="signup-note">학생 계정을 만들어요. 강사 계정은 관리자에게 요청해 주세요.</p>
+      <input className="field" placeholder="아이디 (영문 소문자·숫자 3~20자)" autoComplete="username" value={form.id} onChange={set('id')} aria-label="아이디" />
+      <input className="field" placeholder="이름" autoComplete="name" value={form.name} onChange={set('name')} aria-label="이름" maxLength={50} />
+      <div className="pw">
+        <input className="field" type={show ? 'text' : 'password'} placeholder="비밀번호 (4자 이상)" autoComplete="new-password" value={form.password} onChange={set('password')} aria-label="비밀번호" />
+        <button type="button" className="eye" onClick={() => setShow((v) => !v)} aria-label={show ? '비밀번호 숨기기' : '비밀번호 보기'}>
+          <EyeIcon show={show} />
+        </button>
+      </div>
+      <input className="field" type={show ? 'text' : 'password'} placeholder="비밀번호 확인" autoComplete="new-password" value={form.passwordConfirm} onChange={set('passwordConfirm')} aria-label="비밀번호 확인" />
+      <label className="birth">
+        <span className="birth-label">생년월일 <em>필수</em></span>
+        <input className="field" type="date" min={MIN_BIRTH_DATE} max={today} value={form.birthDate} onChange={set('birthDate')} aria-label="생년월일" required />
+        {age !== null && <span className="birth-age">만 {age}세</span>}
+      </label>
+      {error && <p className="err" role="alert">{error}</p>}
+      <button type="submit" className="login-btn" disabled={busy}>{busy ? '가입하는 중…' : '가입하기'}</button>
+      <div className="login-links">
+        <button type="button" onClick={onBack}>이미 계정이 있어요 · 로그인</button>
+      </div>
+    </form>
+  )
+}
+
 export default function Login() {
   const { login } = useStore()
+  const [mode, setMode] = useState('login')
   const navigate = useNavigate()
   const [role, setRole] = useState('student')
   const [id, setId] = useState('')
   const [pw, setPw] = useState('')
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
+    if (busy) return
     if (!id.trim() || !pw) {
       setError('아이디와 비밀번호를 입력해 주세요.')
       return
     }
-    const err = login(id, pw, role)
+    setBusy(true)
+    const err = await login(id, pw, role)
+    setBusy(false)
     if (err) setError(err)
     else navigate('/', { replace: true })
   }
 
   const notReady = () => setError('체험판에서는 지원하지 않아요. 받은 체험 계정으로 로그인해 주세요.')
+  const openSignup = () => { setError(''); setMode('signup') }
 
   return (
     <div className="login-page">
@@ -91,6 +157,7 @@ export default function Login() {
           <BusArt />
         </section>
 
+        {mode === 'signup' ? <SignupForm onBack={() => setMode('login')} /> : (
         <form className="login-form" onSubmit={submit} noValidate>
           <h2>로그인</h2>
           <div className="seg" role="tablist" aria-label="계정 종류">
@@ -128,20 +195,17 @@ export default function Login() {
               aria-label="비밀번호"
             />
             <button type="button" className="eye" onClick={() => setShow((s) => !s)} aria-label={show ? '비밀번호 숨기기' : '비밀번호 보기'}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
-                <circle cx="12" cy="12" r="3" />
-                {!show && <path d="M4 4l16 16" />}
-              </svg>
+              <EyeIcon show={show} />
             </button>
           </div>
           {error && <p className="err" role="alert">{error}</p>}
-          <button type="submit" className="login-btn">login</button>
+          <button type="submit" className="login-btn" disabled={busy}>login</button>
           <div className="login-links">
-            <button type="button" onClick={notReady}>회원가입</button>
+            <button type="button" onClick={openSignup}>회원가입</button>
             <button type="button" onClick={notReady}>아이디, 비밀번호를 잊어버렸나요?</button>
           </div>
         </form>
+        )}
       </main>
     </div>
   )

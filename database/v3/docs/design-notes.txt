@@ -1,0 +1,78 @@
+도로버스 최종 DB 설계 v3 / 2026-11-12
+
+1. 최종 범위
+이전의 일일 수리 유지 결정을 철회한다. v3에서는 일일 수리를 설계 범위에서 제외하며 이 결정이 과거 유지 문구보다 우선한다. 본편 스토리와 story_steps/user_story_progress는 제외하고 자동차 수리는 독립 도입 사건으로 유지한다. 과정·반·수강·과제는 유지하되 수리 입장·진행·답안 조건에 연결하지 않는다.
+기준은 dorobus-db-final-2026-11-12-v2, 콘텐츠 커밋 8366c216195fb184d3cf8722fce003fbe2d5e53f이다. 남은 9개 사건의 UUID·게임 규칙은 v2와 같다. 게임 소스·운영 DB에는 적용하지 않았다.
+
+2. 면허·단서·완료의 처리
+onboarding인 자동차만 license_holder_id가 자동 NULL이다. 다른 사건은 본인 user_id로 자동 계산되어 운전면허 FK를 검사한다. driving_licenses.source_run_id는 본인의 완료된 도입 사건을 참조하고, issue_driving_license 함수가 repair:car·원인 해결·시험 통과를 재검사한다. 자동차 완료와 면허 발급은 같은 트랜잭션이다.
+unlock_after_keys는 같은 버전의 선행 단서 중 하나를 관찰하면 조사를 연다(OR). revealed_clue_key는 도움으로 미리 열린 단서다. 표시된 버튼·관찰한 사실·답안의 선택 근거를 구별하며 issued_at·shown_at도 구별한다. 응답 유실 뒤 resume으로 복원한다.
+서버는 사용자 자문 잠금 → 도전 행 잠금 → 지갑 갱신 순서로 처리한다. 완료·최초 완료·면허·보상·원장·지갑은 한 트랜잭션이며 실패하면 함께 취소한다. 해시 충돌은 대기를 늘릴 수 있지만 다른 사용자의 권한을 허용하지 않는다.
+
+3. 유지한 테이블 구조
+공통 15개 + 수리 정의 6개 + 수리 기록 6개 + 운전면허 1개, 합계 28개 테이블을 유지한다. 수리 정의는 parts, repair_case_versions, repair_clues, repair_problems, repair_tests, repair_wrong_hypotheses다. 기록은 repair_runs, repair_clue_discoveries, repair_attempt_evidence, repair_problem_solutions, repair_trials, repair_hint_events다.
+콘텐츠·버전, 관찰·선택 근거, 최초 완료·재도전, 원인 해결·시험을 구별한다. learning_attempts의 수리 과제 연결 금지와 판정 메타데이터도 그대로다. 이번 컬럼 변화는 repair_runs.business_date 한 개 삭제뿐이다. 사용자 정의 트리거 3개를 유지한다.
+
+4. 부품과 자격 해금
+회전목마 → 높이 조절 받침대(height_support), 사파리 → 컨베이어 벨트(conveyor), 푸드코트 → 분기 레일(branch_rail), 바이킹 → 균형추(counterweight), 롤러코스터 → 판자(plank), 전광판 → 전선 블록(wire).
+부품은 수량을 소모하는 재고가 아니라 해결 방법을 여는 영구 권한이다. 실제 repair_case 정의와 본인·콘텐츠·버전이 일치하는 completed 도전을 JOIN한 최초 완료만 사용한다. 재도전으로 최초 완료 버전의 해금을 덮어쓰지 않는다.
+서로 다른 축제 사건 4개를 완료하면 퍼레이드, 퍼레이드를 완료하면 remote_repair 자격으로 원격 배송 수리에 입장한다. 운전면허와 원격 자격은 별개다. 원본 UI의 대체 부품 fallback 규칙도 v2와 동일하다.
+
+5. 일일 수리 제외 결정과 남은 보상 경로
+일일 수리를 설계에서 완전히 제외한다. daily 역할·업무일·일일 전용 제약/인덱스·대상 선정·선택형 판정 엔진·5개 시드·집계와 시나리오를 제거했다. 수리 답안은 자유 가설 text와 관찰 근거 evidence이며 option_id 형식은 거부한다.
+공통 wallets/cell_transactions/reward_claims와 reward_claims.source_repair_run_id, reward_must_be_finished_fk, run당 보상 UNIQUE, repair_case_versions.reward_cell은 유지한다. 남은 9개 사건의 reward_cell은 모두 0이다. complete는 양수 보상이며 최초 완료일 때만 공통 지급 경로를 실행한다. 지급 시 보상 수령·원장·지갑을 함께 기록하며 재호출·재도전으로 중복 지급하지 않는다.
+검증 전용 DB에서만 임시 17 CELL 정의로 양수 경로·강제 실패 롤백을 검사하고 0으로 복구했다. 이것은 새 콘텐츠 정책이 아니다.
+
+6. DB 제약과 서버의 책임
+DB는 소유자·도전·버전·콘텐츠 종류·완료 상태 연결, 면허, 수리 과제 연결 금지, 원인 해결의 correct/partial 연결, 보상/원장 중복 방지를 보장한다. 서버는 인증·조회 범위·의미 판정·관찰 상태·부품·입장 자격·유효 시험·공개 버전·금액·원자적 저장을 책임진다.
+서버 런타임에 RLS는 없다. 서버용 역할로 passed/verdict/phase를 거짓 입력하는 모든 공격을 DB가 자동 차단한다고 주장하지 않는다. 공개 정의는 수정하지 않고 새 버전을 발행한다. 기존 run은 시작 버전을 유지한다.
+
+7. 구현 범위와 후속 작업
+구현: 신규 DB SQL, 9개 시드, 면허 발급 함수, 런타임 권한, 수리 서비스, 분석 조회문 7개, 검증, ERD와 상세 문서.
+프론트 후속 작업: World.jsx의 일일 수리 진입과 FixMission 연결·화면을 제거한다. 이번 작업에서는 게임 소스를 수정하지 않고 이 목록에만 기록한다.
+기타 후속: 실제 인증/HTTP 연결, 프론트 저장 전환, Gemini 의미 판정, 자동 힌트, 생각 메모/초안 저장, 보관 정책 실행, 실제 PostgreSQL 다중 연결 검증. 현재 로컬 규칙 판정과 저장 참조 구현을 이 기능들이 이미 배포된 것으로 해석하지 않는다.
+
+8. 기존 계정과 이관
+이 패키지는 새 개발 DB용이다. localStorage의 면허 표시만 믿고 면허를 발급하지 않는다. 개발용 계정은 자동차 도입 사건을 다시 완료하도록 하고 실제 이관은 신뢰 가능한 완료 근거를 확인하여 별도 설계한다. 도전을 임의 생성해 NULL 완료를 소급 정당화하지 않는다. 운영 DB 파괴·전환 스크립트는 포함하지 않는다.
+
+9. 구현 순서와 협업 분담
+1단계: SQL/ERD를 검토하고 빈 개발 DB에 적재. 담당 제안: 희찬 중심, 재훈 검토. 실측 기준 28표·206컬럼·9사건.
+2단계: 서버 인증 결과를 users.auth_subject와 연결하고 본인/개발자 조회 권한을 확인한다. 요청 본문의 userId/role을 신뢰하지 않는다.
+3단계: 자동차 시작→조사→가설→시험→완료·면허를 화면에 연결한다. 담당 제안: 재훈 화면, 희찬 저장/조회. 재접속 복원과 재시도 면허 1개를 확인한다.
+4단계: 축제 6개, 단서 해금, 부품, 퍼레이드·원격 자격을 연결한다. 본편 스토리 연결은 제거하되 수리 사건의 캐릭터 대화·단서·시험은 유지한다.
+5단계: 분석 화면·Gemini 연결을 진행하고 실제 PostgreSQL 다중 연결 경쟁·교착·장애 복구를 검증한다. 프론트는 서버 성공 응답 뒤 완료·잔액을 갱신하며 재시도에는 같은 requestId를 사용한다.
+
+10. 희찬 님께 전달할 답변
+일일 수리 유지 결정을 철회하고 v3 설계에서 제외했습니다. 자동차 도입 사건, 면허, 부품 6개, 축제 4종 후 퍼레이드, 이후 원격 자격은 그대로입니다. 수리 정의 6개와 기록 6개 및 기존 교육 영역도 유지했습니다.
+v2의 최초 완료 우회 차단과 면허·권한은 유지하고 일일 전용 컬럼·제약·인덱스·시드·서비스 분기만 걷어냈습니다. 남은 9개 사건의 CELL 보상은 0이지만 공통 보상 구조와 양수 보상 경로는 유지합니다. 이번 첨부는 별도 개발 DB 설계이며 게임·운영 DB에 적용한 결과는 아닙니다.
+
+11. 기준 자료
+콘텐츠 기준 커밋·원본 파일 SHA256: source/provenance.json. v2 폴더·ZIP 보존 해시: validation/original-hashes.json.
+SQL 동작 근거는 동봉 실행 결과와 실제 DB 카탈로그다. docs/v2-to-v3.diff는 소스와 문서 차이를 기록하며 마이그레이션으로 실행하지 않는다.
+
+12. v2 최초 완료 보장 유지
+content_completions.content_kind는 필수이며 contents(id,kind) FK가 실제 정의와 일치시킨다. completion_repair_source_required는 수리에만 source_repair_run_id를 강제하고 비수리에는 NULL을 요구한다. 수리는 source_phase가 자동 completed가 되어 completion_must_be_finished_fk가 본인·콘텐츠·버전·완료 상태를 검사한다.
+repair_case_versions.content_kind는 자동 repair_case 및 NOT NULL이다. repair_definition_kind_fk가 비수리 콘텐츠에 수리 상세를 붙이거나 실제 kind를 변경하는 우회를 차단한다. 종류 생략·NULL·quiz 위장, 다른 사용자·버전·미완료 도전 연결을 이번에도 거부했다.
+reward_claims는 비수리 보상도 담으므로 source_repair_run_id=NULL을 허용한다. 수리 도전이 연결되면 reward_must_be_finished_fk와 run당 UNIQUE가 적용된다. 보상 금액·전체 지갑 일치를 FK만으로 자동 보장한다고 설명하지 않는다.
+
+13. v2 → v3 실제 집계와 동일성
+- 테이블: 28 → 28
+- 컬럼: 207 → 206
+- PK: 28 → 28
+- UNIQUE 제약: 35 → 35
+- FK: 52 → 52
+- CHECK: 85 → 83
+- PK/UNIQUE/FK/CHECK 합계: 200 → 198
+- NOT NULL 컬럼: 161 → 161
+- NOT NULL 포함 pg_constraint 행: 361 → 359
+- 기본 인덱스: 76 → 75
+- 선택 006 적용 후 인덱스: 78 → 77
+- 사용자 정의 트리거: 3 → 3
+- 수리 사건: 14 → 9
+일일 CHECK 2개 삭제·4개 변경 외 모든 PK/UNIQUE/FK/CHECK 이름·정의가 동일하다. business_date 외 컬럼의 타입·필수·기본값·생성식과 남은 콘텐츠 정의는 동일하다. 공통 SQL은 스키마 범위 COMMENT만 바뀌었고 면허/발급/권한/선택 인덱스 SQL은 바이트 단위로 동일하다. 비교 원문은 validation/schema-comparison.json에 있다. NOT NULL 카탈로그 표현은 엔진 버전에 따라 다르므로 별도 집계한다.
+
+14. 실행 결과와 한계
+SQL·서비스 시나리오 94개 PASS / 0개 FAIL, 독립 v2/v3 스키마 비교 10개 PASS / 0개 FAIL, 시드 발행 검사 9개 PASS.
+PGlite 0.5.14, 단일 연결. 실제 version(): PostgreSQL 18.6 (PGlite 0.5.14) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.5 (1db513782be24469589d7cb8a1f1834e9a33f271), 32-bit
+v2의 실제 PostgreSQL 16.15 적재·우회 차단은 사용자가 제공한 이전 이력이다. 이번 v3는 실제 PostgreSQL 16.15 서버에서 재실행하지 않았다. 실제 PostgreSQL 다중 연결의 경쟁·교착·장애 복구, 실제 로그인 권한 배포, 인증·HTTP·프론트엔드·Gemini 연동, 운영 DB 이관·배포는 미실행이다. Promise.all 재시도는 단일 연결 어댑터가 직렬화하며 다중 연결 동시성 통과로 세지 않는다.
+화면 검사는 qa/browser-audit.json, 원본 보존·압축 검사는 qa/package-audit.json에 별도 기록한다. baseline-v2와 비교 diff의 과거 일일 내용은 검증용 기록이며 v3 설치 범위가 아니다.
