@@ -2,3 +2,5 @@
 * text=auto eol=lf
 *.png binary
 *.jpg binary
+# v3 DB 패키지는 MANIFEST.sha256·원본 비교를 위해 줄바꿈(CRLF 포함)을 바이트 그대로 보존한다 (셸 스크립트는 LF로 작성됨)
+database/v3/** -text

@@ -1,0 +1,49 @@
+{
+  "generated_at": "2026-11-12T03:43:08.833647+00:00",
+  "table_count": 28,
+  "column_count": 206,
+  "schema_counts": {
+    "tables": 28,
+    "columns": 206,
+    "primary_keys": 28,
+    "unique_constraints": 35,
+    "foreign_keys": 52,
+    "checks": 83,
+    "not_null_columns": 161,
+    "constraints_excluding_not_null": 198,
+    "catalog_constraints_including_not_null": 359,
+    "indexes": 75,
+    "user_triggers": 3,
+    "repair_runs": {
+      "unique_constraints": 6,
+      "indexes": 9,
+      "constraints_excluding_not_null": 19,
+      "indexes_with_optional": 10
+    },
+    "repair_cases": 9,
+    "indexes_with_optional": 77
+  },
+  "sql_service_scenarios": 94,
+  "seed_checks": 9,
+  "schema_comparison_checks": 10,
+  "browser_checks": 8,
+  "broken_local_links": 0,
+  "duplicate_html_ids": 0,
+  "svg_xml": "PASS",
+  "svg_entities": 28,
+  "svg_fk_edges": 52,
+  "external_document_dependencies": 0,
+  "original_files_unchanged": 65,
+  "browser_evidence": "qa/browser-audit.json",
+  "archive_checks": [
+    "ZIP CRC",
+    "exact file list",
+    "every included file byte-for-byte",
+    "MANIFEST.sha256 entry hashes"
+  ],
+  "limitations": [
+    "단일 연결 PGlite 검증. 실제 PostgreSQL 다중 연결 경쟁 시험 미실행.",
+    "Mermaid는 편집용 소스로 동봉. 실제 화면은 SVG/HTML로 검증.",
+    "원본 보존 비교에는 이 프로젝트의 v2 폴더/ZIP이 필요. 팀원이 v3만 받은 경우 이 보존 비교 단계는 별도 환경에서 재현."
+  ]
+}

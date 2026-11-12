@@ -1,0 +1,37 @@
+{
+  "commit": "8366c216195fb184d3cf8722fce003fbe2d5e53f",
+  "captured_on": "2026-11-12",
+  "files": [
+    {
+      "path": "src/game/repairCases.js",
+      "sha256": "590cff355d5a49f919ed0d9d3723fb7fa9947734770fa5085dc70c138451b73d",
+      "url": "https://github.com/calzsvg/database_dorobus/blob/8366c216195fb184d3cf8722fce003fbe2d5e53f/src/game/repairCases.js"
+    },
+    {
+      "path": "src/game/voidJudge.js",
+      "sha256": "6500be926f218fd9bec974d8ad576987b1bb9d2ab9132a3135a5b2806649895f",
+      "url": "https://github.com/calzsvg/database_dorobus/blob/8366c216195fb184d3cf8722fce003fbe2d5e53f/src/game/voidJudge.js"
+    },
+    {
+      "path": "src/pages/Repair.jsx",
+      "sha256": "a359460082082615413b1d057ea9c48db664b098a40aab57845c5623d5317153",
+      "url": "https://github.com/calzsvg/database_dorobus/blob/8366c216195fb184d3cf8722fce003fbe2d5e53f/src/pages/Repair.jsx"
+    },
+    {
+      "path": "src/pages/MyRoom.jsx",
+      "sha256": "65bce9e51ff7dd7e9d8ecb4aba0315ddb3f1b111d24391dec4799338f780630c",
+      "url": "https://github.com/calzsvg/database_dorobus/blob/8366c216195fb184d3cf8722fce003fbe2d5e53f/src/pages/MyRoom.jsx"
+    },
+    {
+      "path": "src/store.jsx",
+      "sha256": "5d323350b55f6c99ad7bf39cd005132c4f9abbbec105a72fde6584f71161e3a5",
+      "url": "https://github.com/calzsvg/database_dorobus/blob/8366c216195fb184d3cf8722fce003fbe2d5e53f/src/store.jsx"
+    },
+    {
+      "path": "server/void-server.mjs",
+      "sha256": "332fd1544c98aa90890440d0b5819ee9ae685bc07325814de4f8de5708fc3909",
+      "url": "https://github.com/calzsvg/database_dorobus/blob/8366c216195fb184d3cf8722fce003fbe2d5e53f/server/void-server.mjs"
+    }
+  ],
+  "v3_scope": "v2의 원본 파일 근거 중 유지한 사건·판정 관련 기록. 일일 자료는 v3 시드에서 제외. 게임 저장소를 수정하거나 새로 갱신하지 않음."
+}
