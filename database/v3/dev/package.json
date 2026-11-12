@@ -1,0 +1,12 @@
+{
+  "name": "dorobus-v3-dev-pg",
+  "private": true,
+  "type": "module",
+  "description": "v3 검증 시나리오를 실제 PostgreSQL 16 서버에서 실행하는 로컬 도구",
+  "scripts": {
+    "verify:pg": "bash ./verify-pg.sh"
+  },
+  "dependencies": {
+    "pg": "8.13.1"
+  }
+}

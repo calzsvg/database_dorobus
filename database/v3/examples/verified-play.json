@@ -1,0 +1,22 @@
+{
+  "carComplete": {
+    "runId": "ddda0da7-2f33-4a30-a21c-af6befdb6a29",
+    "completedAt": "2026-11-12T01:00:00.000Z",
+    "requestId": "f9923cc4-f0f1-4ac5-b22f-d35ab847111c",
+    "firstCompletion": true,
+    "rewardCell": 0
+  },
+  "rewardFixture": {
+    "runId": "6e538541-d000-4f20-b61e-a180f96f5ee3",
+    "result": {
+      "runId": "6e538541-d000-4f20-b61e-a180f96f5ee3",
+      "completedAt": "2026-11-12T01:00:00.000Z",
+      "requestId": "141b81a7-3d7e-483f-8b73-9a547213e117",
+      "firstCompletion": true,
+      "rewardCell": 17
+    },
+    "amount": 17,
+    "definition_restored_to": 0
+  },
+  "note": "자동 검증용 가상 학생의 실제 SQL 실행 결과. 17 CELL은 양수 보상·롤백 검사 전용 임시 정의이며 배포 시드 9종은 모두 0 CELL. 운영 데이터가 아님."
+}

@@ -1,0 +1,55 @@
+도로버스 v2 → v3 변경·실측 보고 / 2026-11-12
+
+결정
+이전의 일일 수리 유지 결정을 철회한다. v3에서는 일일 수리를 설계 범위에서 제외한다. 이 결정이 과거 유지 문구보다 우선한다. 원본 v2 폴더·ZIP·ZIP 해시는 보존하고 별도 v3 폴더와 ZIP을 만든다.
+
+실제 변경
+- sql/002_repair.sql: case_role은 onboarding/festival/finale/remote만 허용. business_date, 날짜 CHECK, attempts_daily_verdict_check, repair_runs_daily_once_idx를 삭제했다.
+- CHECK 4개에서 daily 허용/예외와 option_id 선택형 답안 허용 분기를 제거했다. option_id 키를 거부하는 일반 가설 검사는 유지한다. repair_runs_one_open_regular_idx는 phase<>'completed' 조건만 쓴다. 식별자 보호 함수는 business_date 비교만 제거했다.
+- 기존 완료 시각 CHECK는 repair_runs_check1이라는 v2 이름을 명시하여, 앞의 일일 CHECK 삭제에 따른 자동 이름 변경까지 방지했다.
+- daily:carousel, daily:ferris, daily:coaster, daily:sign, daily:harmonia의 contents/content_versions/repair_case_versions를 삭제했다. source의 일일 스냅샷·보상값·ID와 시드 생성 분기도 제거했다.
+- 서버의 dailyIds/dailyTargets/daily-choice-v1와 start/help/submit/rethink/adjust/test/complete의 일일 분기를 제거했다. 답안은 text와 evidence이며 optionId/option_id를 서비스에서도 거부한다.
+- Q05 일일 집계 삭제 후 뒤 번호를 당겨 분석 조회문은 7개다. 일일 대상·날짜 경계·다음 날 지급·일일 중복 지급 시나리오를 제거했다.
+- README, 설계 노트 5절, 실행 안내 E절, HTML, SVG/Mermaid ERD를 v3 실행 메타데이터와 결과로 다시 생성했다. 프론트 후속 제거 목록은 설계 노트 7절에만 적었다.
+
+그대로 유지
+공통 15 + 수리 정의 6 + 수리 기록 6 + 면허 1 테이블 구조, 면허 FK/발급 함수/런타임 권한, content_kind FK·completion_repair_source_required·completion_must_be_finished_fk, wallets/cell_transactions/reward_claims, reward_claims.source_repair_run_id·reward_must_be_finished_fk·run당 보상 UNIQUE, repair_case_versions.reward_cell을 유지했다.
+남은 사건 9개는 모두 reward_cell=0이다. complete는 reward_cell>0이고 최초 완료일 때 지급하는 일반 경로를 유지한다. 자동차 이외의 사건은 운전면허, 축제 4종 후 퍼레이드, 퍼레이드 후 원격 자격 규칙이 같다.
+sql/001_core.sql은 스키마 COMMENT의 일일 유지 문구만 제외 결정으로 바꿨다. 003_license.sql, 004_license_issuer.sql, 005_runtime_permissions.sql, 006_index_candidates.sql은 v2 원문과 바이트 단위로 동일하다.
+
+실측 v2 → v3 (이번 실행에서 두 독립 DB에 각 버전 SQL·시드 적재 후 카탈로그 조회)
+- 테이블: 28 → 28
+- 컬럼: 207 → 206
+- PK: 28 → 28
+- UNIQUE 제약: 35 → 35
+- FK: 52 → 52
+- CHECK: 85 → 83
+- PK/UNIQUE/FK/CHECK 합계: 200 → 198
+- NOT NULL 컬럼: 161 → 161
+- NOT NULL 포함 pg_constraint 행: 361 → 359
+- 기본 인덱스: 76 → 75
+- 선택 006 적용 후 인덱스: 78 → 77
+- 사용자 정의 트리거: 3 → 3
+- 수리 사건: 14 → 9
+- repair_runs UNIQUE: 6 → 6
+- repair_runs 기본 인덱스: 10 → 9
+- repair_runs 선택 포함 인덱스: 11 → 10
+인덱스 수는 PK/UNIQUE 지원 인덱스와 부분 인덱스를 포함한다. NOT NULL 컬럼과 pg_constraint 행은 다른 집계다. 특히 PostgreSQL 16과 이번 엔진의 NOT NULL 카탈로그 표현을 동일시하지 않는다. 성능 개선 측정값이 아니다.
+
+실행 검증
+SQL·서비스 시나리오 94개 PASS / 0개 FAIL, 독립 v2/v3 스키마 비교 10개 PASS / 0개 FAIL, 시드 발행 검사 9개 PASS.
+daily 정의 INSERT CHECK 거부, daily 도전 INSERT 역할 FK 거부, option_id 단독·text 혼합 답안 DB 거부와 서비스 거부를 확인했다. v2의 자동차/면허/부품 6종/축제 3종 거부·4종 입장/퍼레이드·원격/최초 완료 우회 차단 회귀 검증을 실행했다.
+실제 9종을 완료하면 보상·원장이 생기지 않음을 확인했다. 양수 보상 경로는 검증 DB에서 자동차 reward_cell을 임시 17로 설정하여 원장 직후 강제 실패 시 도전·최초 완료·면허·보상·원장·지갑 롤백을 확인했다. 정상 지급·재호출 중복 방지·재도전 추가 지급 없음도 확인하고 finally에서 0으로 복구했다. 이 17 CELL은 배포 시드나 운영 정책이 아니다.
+일일 관련 CHECK 2개 삭제·4개 변경 외 모든 PK/UNIQUE/FK/CHECK의 이름과 정의가 동일하다. 일일 인덱스 삭제·진행 중 도전 인덱스 조건 변경 외 인덱스도 동일하다. 남은 9개 사건의 식별자·규칙·보상·부품·단서·시험 정의는 v2와 동일하다.
+
+검증 엔진과 한계
+PGlite 0.5.14, 단일 연결. 실제 version(): PostgreSQL 18.6 (PGlite 0.5.14) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.5 (1db513782be24469589d7cb8a1f1834e9a33f271), 32-bit
+같은 프로젝트에 이미 설치된 고정 0.5.14 모듈을 PGLITE_MODULE로 지정해 npm test를 실행했다. 이번에는 npm ci 신규 설치를 수행하지 않았다.
+사용자가 제공한 기준 상태: v2는 실제 PostgreSQL 16.15에서 적재와 수리 최초 완료 우회 차단을 확인했다. 이번 v3 실행 결과와 별개인 기존 검증 이력이다.
+이번 v3는 실제 PostgreSQL 16.15 서버에서 재실행하지 않았다. 실제 PostgreSQL 다중 연결의 경쟁·교착·장애 복구, 실제 로그인 권한 배포, 인증·HTTP·프론트엔드·Gemini 연동, 운영 DB 이관·배포는 미실행이다. Promise.all 재시도는 단일 연결 어댑터가 직렬화하며 다중 연결 동시성 통과로 세지 않는다.
+게임 프론트엔드 및 운영 DB는 수정하지 않았다. 새 개발 DB 생성용이며 기존 DB에 덮어쓰는 마이그레이션이 아니다.
+
+근거 파일
+validation/results.json, validation/schema-comparison.json, validation/schema-metadata.json, validation/schema-metadata-v2.json, validation/seed-validation.json, examples/verified-play.json.
+validation/baseline-v2/의 일일 SQL·시드는 비교 전용 원본이다. v3 설치에는 실행하지 않는다. docs/v2-to-v3.diff에는 삭제 전후 기록이 있으므로 과거 일일 문구가 남아 있다.
+qa/browser-audit.json은 오프라인 화면 검증, qa/package-audit.json과 MANIFEST.sha256은 링크·ERD·원본 보존·ZIP 바이트 검증을 기록한다. 이 검사를 DB 시나리오 수에 합산하지 않는다.

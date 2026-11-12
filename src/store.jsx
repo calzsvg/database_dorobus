@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { ACCOUNTS, DEMO_STAGES } from './accounts.js'
+import { ACCOUNTS, DEMO_STAGES, validateSignup } from './accounts.js'
 import { INITIAL_PROGRESS, STORY_DONE } from './game/progress.js'
 import { MAX_VISIT_LOG, VISIT_REWARD } from './game/visits.js'
 import { checkInPatch, dailyOf } from './game/routine.js'
@@ -22,6 +22,7 @@ export const SHOP_ITEMS = [
 ]
 
 const SESSION_KEY = 'dorobus.session'
+const SIGNUP_KEY = 'dorobus.accounts' // 회원가입으로 만든 계정 목록 (체험판: 이 브라우저에만 저장)
 const dataKey = (id) => `dorobus.data.${id}`
 
 const read = (key) => {
@@ -46,7 +47,12 @@ const remove = (key) => {
   }
 }
 
-const findUser = (id) => ACCOUNTS.find((a) => a.id === id) || null
+const signedUpAccounts = () => {
+  const list = read(SIGNUP_KEY)
+  return Array.isArray(list) ? list : []
+}
+const allAccounts = () => [...ACCOUNTS, ...signedUpAccounts()]
+const findUser = (id) => allAccounts().find((a) => a.id === id) || null
 const loadData = (u) => {
   const saved = read(dataKey(u.id)) || { cell: u.cell, owned: [], progress: u.preset }
   return { ...saved, progress: { ...INITIAL_PROGRESS, ...saved.progress } }
@@ -63,7 +69,7 @@ export function StoreProvider({ children }) {
   }, [user, data])
 
   const login = (id, password, role) => {
-    const u = findUser(id.trim())
+    const u = findUser(id.trim().toLowerCase())
     if (!u || u.password !== password) return '아이디 또는 비밀번호가 맞지 않아요.'
     if (u.role !== role) {
       return u.role === 'student' ? '학생 계정이에요. 학생 탭에서 로그인해 주세요.' : '강사 계정이에요. 강사 탭에서 로그인해 주세요.'
@@ -71,6 +77,17 @@ export function StoreProvider({ children }) {
     setUser(u)
     setData(loadData(u))
     write(SESSION_KEY, u.id)
+    return null
+  }
+
+  // 회원가입: 학생 계정만 만든다(강사 계정은 관리자가 등록). 성공하면 바로 로그인하고 null, 실패하면 안내 문구
+  const signup = (form) => {
+    const { error, account } = validateSignup(form, allAccounts().map((a) => a.id))
+    if (error) return error
+    write(SIGNUP_KEY, [...signedUpAccounts(), account])
+    setUser(account)
+    setData(loadData(account))
+    write(SESSION_KEY, account.id)
     return null
   }
 
@@ -155,7 +172,7 @@ export function StoreProvider({ children }) {
 
   // G · 친구 방 미니게임: 같은 브라우저에서 플레이한 다른 계정의 데이터를 읽고, 플레이 수·좋아요를 남긴다
   const otherPlayers = () =>
-    ACCOUNTS.filter((a) => a.id !== user?.id)
+    allAccounts().filter((a) => a.id !== user?.id)
       .map((a) => ({ account: a, data: read(dataKey(a.id)) }))
       .filter((x) => x.data)
       .map(({ account, data: d }) => ({ id: account.id, name: account.name, progress: { ...INITIAL_PROGRESS, ...d.progress } }))
@@ -193,6 +210,7 @@ export function StoreProvider({ children }) {
         progress: data?.progress ?? INITIAL_PROGRESS,
         buy,
         login,
+        signup,
         logout,
         setProgress,
         addCell,

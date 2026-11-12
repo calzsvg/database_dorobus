@@ -442,6 +442,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .login-links { display: flex; justify-content: space-between; font-size: 12px; }
 .login-links button { font-size: 12px; color: #2b2f38; }
 .login-links button:hover { text-decoration: underline; }
+.signup-note { margin: -6px 0 2px; text-align: center; font-size: 12.5px; color: #5b6475; }
+.birth { display: flex; flex-direction: column; gap: 6px; }
+.birth-label { font-size: 13px; font-weight: 700; color: #2b2f38; }
+.birth-label em { margin-left: 4px; font-style: normal; font-size: 11px; font-weight: 700; color: #2f7bff; }
+.birth-age { font-size: 12.5px; color: #2f7bff; font-weight: 600; }
 .seg button:focus-visible, .login-btn:focus-visible, .eye:focus-visible, .login-links button:focus-visible { outline: 2px solid #2f7bff; outline-offset: 2px; }
 @media (max-width: 899px) {
   .login-main { grid-template-columns: 1fr; gap: 28px; }

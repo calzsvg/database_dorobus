@@ -1,0 +1,38 @@
+{
+  "car": {
+    "content": "815947bd-4058-54e8-ab62-b2c5872d800d",
+    "version": "2d29197f-a10c-5548-86ff-b85008062425"
+  },
+  "carousel": {
+    "content": "cce898a6-0ec5-57b6-8b27-b21656c9ebdb",
+    "version": "5b3ce413-77af-5e9b-8fab-03995f32dca9"
+  },
+  "safari": {
+    "content": "9d44bcbc-1908-5e57-81c9-7ae2a3016cb0",
+    "version": "b880aae0-c8e6-55cc-8ac2-b04cd94173c3"
+  },
+  "food": {
+    "content": "b415bcaa-9fe3-53b9-9232-55a73a3d5e99",
+    "version": "3e12688f-1bbb-5723-a76d-6a27fcb0b29e"
+  },
+  "viking": {
+    "content": "7275c0e2-cd9e-5e3c-9e08-06425a44dc8f",
+    "version": "95b7829f-e862-53dc-af1a-6f5d36215e53"
+  },
+  "coaster": {
+    "content": "c4d4eecc-6e7e-539b-b99b-174952aaa222",
+    "version": "35461958-2fce-5b5b-9632-fdb7b09fee9b"
+  },
+  "sign": {
+    "content": "84a78f11-99c7-5354-9f55-b4677ac43e9e",
+    "version": "d86c422c-2c2d-5d7b-b4db-59a0123dc34f"
+  },
+  "parade": {
+    "content": "78ec039e-76cd-5cef-987f-a7d444daa4e4",
+    "version": "699c4795-0383-5bc7-8b53-15004a10a328"
+  },
+  "delivery": {
+    "content": "238b029d-3877-5817-aa8a-219b6a7fec2a",
+    "version": "ef81f0d1-d070-5bd9-b07d-0afc09187a61"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "compared_objects": 512,
+  "pglite": {
+    "tables": 28,
+    "columns": 207,
+    "constraints_excluding_not_null": 199,
+    "not_null_constraint_rows": 162,
+    "indexes": 75,
+    "triggers": 3
+  },
+  "pg16": {
+    "tables": 28,
+    "columns": 207,
+    "constraints_excluding_not_null": 199,
+    "not_null_constraint_rows": 0,
+    "indexes": 75,
+    "triggers": 3
+  },
+  "only_pglite": [],
+  "only_pg16": [],
+  "different": [],
+  "identical": true
+}
