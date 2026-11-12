@@ -48,6 +48,27 @@ export async function verifyBirthDate({db, check}) {
     await rejects(() => q("SELECT dorobus.register_local_user('plain-kid','x',DATE '2015-02-02','1234')"), '23514');
     await rejects(() => q("UPDATE dorobus.users SET password_hash='x' WHERE id=$1", [id]), '42501');
   }, true));
+  await check('009 users.age: 넣을 때 자동 계산, 직접 넣은 값 무시, 생년월일 수정 시 재계산', () => tx(async () => {
+    const [{expected}] = await q("SELECT dorobus.age_on(DATE '2014-05-01',(now() AT TIME ZONE 'Asia/Seoul')::date) expected");
+    const [u] = await q("INSERT INTO dorobus.users(login_id,display_name,role,auth_subject,birth_date,age) VALUES('age-kid','x','student','age-kid',DATE '2014-05-01',99) RETURNING id,age");
+    assert.equal(u.age, expected);
+    const [v] = await q("UPDATE dorobus.users SET birth_date=DATE '2000-01-01' WHERE id=$1 RETURNING age", [u.id]);
+    assert.equal(v.age, (await q("SELECT dorobus.age_on(DATE '2000-01-01',(now() AT TIME ZONE 'Asia/Seoul')::date) a"))[0].a);
+    const [w] = await q('SELECT u.age = a.age same FROM dorobus.users u JOIN dorobus.users_with_age a USING (id) WHERE u.id=$1', [u.id]);
+    assert.equal(w.same, true);
+  }));
+  await check('009 refresh_user_ages: 낡은 나이만 갱신, 런타임 실행 가능', () => tx(async () => {
+    await q("INSERT INTO dorobus.users(login_id,display_name,role,auth_subject,birth_date) VALUES('stale-kid','x','student','stale-kid',DATE '2014-05-01')");
+    await q("ALTER TABLE dorobus.users DISABLE TRIGGER users_set_age");
+    await q("UPDATE dorobus.users SET age=1 WHERE login_id='stale-kid'");
+    await q("ALTER TABLE dorobus.users ENABLE TRIGGER users_set_age");
+    await db.exec('SET LOCAL ROLE dorobus_app_runtime');
+    const [{n}] = await q('SELECT dorobus.refresh_user_ages() n');
+    assert(n >= 1);
+    const [{same}] = await q("SELECT u.age = a.age same FROM dorobus.users u JOIN dorobus.users_with_age a USING (id) WHERE u.login_id='stale-kid'");
+    assert.equal(same, true);
+    assert.equal((await q('SELECT dorobus.refresh_user_ages() n'))[0].n, 0);
+  }));
   await check('나이 뷰는 auth_subject를 노출하지 않음', async () => {
     const cols = (await q("SELECT column_name FROM information_schema.columns WHERE table_schema='dorobus' AND table_name='users_with_age'")).map(r => r.column_name);
     assert(cols.includes('age') && cols.includes('birth_date') && !cols.includes('auth_subject'));

@@ -25,7 +25,7 @@ async function solve(id,key,existing){const s=existing??await start(id,key),runI
 let failure=null;
 try{
  const m=await metadata(db);await writeFile(resolve(root,'validation/schema-metadata.json'),JSON.stringify(m,null,2));
- await check('공통 15 + 수리 12 + 면허 1 = 28개 / 208개 컬럼 (v3 206 + 007 birth_date + 008 password_hash)',()=>{assert.equal(m.table_count,28);assert.equal(m.column_count,208);assert(m.tables.find(t=>t.name==='users').columns.some(c=>c.name==='birth_date'&&c.not_null));assert(!m.tables.some(t=>t.name.includes('story')));for(const t of ['courses','class_groups','enrollments','assignments'])assert(m.tables.some(x=>x.name===t));});
+ await check('공통 15 + 수리 12 + 면허 1 = 28개 / 209개 컬럼 (v3 206 + 007 birth_date + 008 password_hash + 009 age)',()=>{assert.equal(m.table_count,28);assert.equal(m.column_count,209);assert(m.tables.find(t=>t.name==='users').columns.some(c=>c.name==='age'&&c.not_null));assert(m.tables.find(t=>t.name==='users').columns.some(c=>c.name==='birth_date'&&c.not_null));assert(!m.tables.some(t=>t.name.includes('story')));for(const t of ['courses','class_groups','enrollments','assignments'])assert(m.tables.some(x=>x.name===t));});
  await check('현재 소스의 도입 1·축제 6·최종 1·원격 1개 사건 적재',async()=>{assert.equal(await count('contents'),9);assert.equal(await count('repair_clues'),81);assert.equal(await count('repair_tests'),18);});
  await check('본편 스토리 유형은 신규 콘텐츠로 등록 불가',()=>probe("INSERT INTO dorobus.contents(code,kind) VALUES('forbidden-story','story_mission')",[],'23514'));
  await check('기존 공통 SQL 제약 검증 통과',async()=>{await db.exec(await read('validation/legacy-common-checks.sql'));});

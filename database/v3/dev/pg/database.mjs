@@ -24,7 +24,7 @@ export async function database() {
   const owner = new pg.Client({...base, user: 'dorobus_owner'});
   owner.on('notice', n => notices.push(n.message));
   await owner.connect();
-  for (const file of ['001_core', '002_repair', '003_license', '004_license_issuer', '005_runtime_permissions', '007_user_birth_date', '008_user_password'])
+  for (const file of ['001_core', '002_repair', '003_license', '004_license_issuer', '005_runtime_permissions', '007_user_birth_date', '008_user_password', '009_user_age'])
     await owner.query(await read('sql/' + file + '.sql'));
   await owner.query(await read('examples/001_content.sql'));
   // 소유자 연결에서 SET LOCAL ROLE dorobus_app_runtime 공격 검사를 하려면 SET 권한이 필요하다(PG16 CREATEROLE 기본값은 SET FALSE).

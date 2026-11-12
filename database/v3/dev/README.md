@@ -91,3 +91,12 @@ database/v3/dev/verify-pg.sh
   ```
 - 미니PC에서 DB를 쓰려면 PostgreSQL 설치, `npm ci`(pg 패키지), 서비스 환경 변수 `DOROBUS_DATABASE_URL`이 필요합니다. 아직 하지 않았습니다.
 - 아직 없는 것: 로그인 세션 토큰. 지금은 로그인 결과를 브라우저에 저장하는 수준이고, 서버 API마다 사용자를 확인하지 않습니다.
+
+## 009 확장: users.age 컬럼
+
+- `sql/009_user_age.sql`: `users.age`(만 나이, NOT NULL)
+  - 행을 넣거나 고칠 때마다 트리거 `users_set_age`가 `birth_date`로 다시 계산합니다. 직접 넣은 값은 무시됩니다.
+  - 저장값이라 생일이 지나면 낡습니다. `dorobus.refresh_user_ages()`가 바뀐 행만 고치고, 로그인 서버(`server/auth.mjs`)가 시작할 때와 1시간마다 호출합니다.
+  - 정확한 오늘 기준 나이가 필요하면 `dorobus.users_with_age` 뷰를 쓰세요. 로그인 API도 이 뷰의 값을 돌려줍니다.
+- 적용 순서: `001`→`005` → `007` → `008` → `009` → 시드
+- 검증: 시나리오 103 PASS (PGlite, PostgreSQL 16)
