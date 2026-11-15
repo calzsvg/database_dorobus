@@ -117,15 +117,14 @@ export function StoreProvider({ children }) {
   }
 
   // 서버가 준 계정·게임 상태로 시작한다. 서버에 상태가 없으면(첫 로그인) 시작 상태를 만들어 바로 저장한다.
-  // 예전에 이 브라우저에 남아 있던 진행(localStorage)이 있으면 그것을 서버로 한 번 옮기고 브라우저에서는 지운다.
+  // 브라우저에 남아 있던 예전 진행(DB 전환 전 localStorage)은 쓰지 않고 지운다. 진행은 서버에만 있다.
   const adopt = ({ user: profile, state, seenEvent }) => {
     const u = fromDb(profile)
-    const legacy = read(dataKey(u.id))
     mode.current = 'db'
     seen.current = seenEvent || 0
     skipSave.current = !!state
     setUser(u)
-    setData(normalize(state || legacy || startState(u)))
+    setData(normalize(state || startState(u)))
     remove(dataKey(u.id))
     remove(SESSION_KEY)
     setPlayersReady(false)

@@ -34,7 +34,7 @@ systemctl --user restart dorobus.service   # 로그에 db=on
 - 브라우저에는 `dorobus_sid` 쿠키(HttpOnly, Secure, SameSite=Lax, 30일)만 남는다. DB에는 토큰의 SHA-256 해시만 둔다.
 - 게임 상태(CELL, 가구, progress 전체)는 `user_game_states`에 계정마다 JSON 한 덩어리로 저장한다. 화면이 변경 1.5초 뒤, 탭을 숨길 때, 1분마다 저장한다.
 - 친구 방 방문, 좋아요, 셀 찾기는 서버가 방 주인 상태에 바로 반영하고 `user_game_events`에 남긴다. 방 주인 화면이 다음 저장 때 같은 일을 반영하면 지운다.
-- 예전에 브라우저(localStorage)에 남아 있던 진행은, 그 계정이 서버에 상태가 없을 때 처음 로그인하면 한 번 서버로 옮기고 브라우저에서 지운다.
+- 브라우저(localStorage)에 남아 있던 DB 전환 전 진행은 쓰지 않고, 로그인할 때 지운다(2026-11-15 전체 초기화 이후).
 - DB 주소가 없는 개발 서버(`npm run dev`)에서만 예전처럼 브라우저 체험 모드로 동작한다.
 - API: `/api/auth/login`, `/api/auth/signup`, `/api/auth/logout`, `/api/session`, `/api/state`, `/api/players`, `/api/friend` (모두 POST, 사이트 주소 Origin 검사)
 
