@@ -7,6 +7,7 @@ import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 import { validateSignup } from '../src/accounts.js'
 import { applyFriendOp, FRIEND_OPS } from '../src/game/friendOps.js'
+import { createRepairLog, REPAIR_ROUTES } from './repair-log.mjs'
 
 const scryptAsync = promisify(scrypt)
 const N = 16384, R = 8, P = 1, KEY_LENGTH = 32
@@ -192,7 +193,7 @@ export function createAuth(databaseUrl, { secureCookie = true } = {}) {
     })
   }
 
-  const actions = { login, signup, logout, session, saveState, players, friend }
+  const actions = { login, signup, logout, session, saveState, players, friend, ...createRepairLog(tx) }
   // 요청 하나 처리: { status, body, cookie? }
   async function handle(route, input, token) {
     const r = ROUTES[route]
@@ -216,6 +217,8 @@ export const ROUTES = {
   '/api/state': { action: 'saveState', signedIn: true, limit: STATE_LIMIT + 1024, by: 'session' },
   '/api/players': { action: 'players', signedIn: true, limit: 1024, by: 'session' },
   '/api/friend': { action: 'friend', signedIn: true, limit: 1024, by: 'session' },
+  // 수리 미션 행동 기록 (server/repair-log.mjs)
+  ...Object.fromEntries(Object.entries(REPAIR_ROUTES).map(([path, action]) => [path, { action, signedIn: true, limit: 8192, by: 'session' }])),
 }
 
 // JSON 본문 읽기(크기 제한). 너무 크면 null, JSON이 아니면 예외

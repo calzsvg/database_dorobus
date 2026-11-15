@@ -3,6 +3,7 @@ import { useStore } from '../store.jsx'
 import { CAR_CASE, countFestivalRepairs, hasRemoteRepairLicense, isTarget, ownedParts, PARADE, REPAIR_CASES, WORKSHOP, trialResult } from '../game/repairCases.js'
 import { voidReply } from '../game/voidRepair.js'
 import { judgeWithModel } from '../game/voidJudge.js'
+import { createRepairLog } from '../game/repairLog.js'
 import RepairScene from './RepairScene.jsx'
 import FixMission from '../missions/FixMission.jsx'
 import { BREAKABLE, pendingFaults } from '../game/daily.js'
@@ -93,6 +94,9 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
   const [inspected, setInspected] = useState(null)
   const [running, setRunning] = useState(false)
   const timer = useRef(null)
+  // 행동 기록(서버 DB). 이미 끝낸 사건을 다시 보는 경우는 기록하지 않는다
+  const log = useRef(null)
+  if (!log.current) log.current = createRepairLog(item.id, { diagnosed: !!investigation.diagnosed, enabled: !records[item.id] })
   const pendingQuestion = useRef(null)
   const completed = useRef(false)
   const licensedAtEntry = useRef(hasRemoteRepairLicense(records))
@@ -156,6 +160,7 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
       const next = [...known, clue.id]
       setKnown(next)
       save({ known: next })
+      log.current.clue(clue.id)
     }
     say(clue.fact, clue.npc ?? null)
   }
@@ -202,6 +207,7 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
   // ‘막혔어, 도와줘’: 힌트를 주고, 지금 힌트와 관련된 숨은 조사 버튼이 있으면 하나 열어 준다
   const stuck = () => {
     let text = nextHint()
+    let opened = null
     if (phase === 'field') {
       const step = item.hints.find(candidate => !candidate.clues.some(id => known.includes(id)))
       const hidden = item.clueList.filter(clue => !isVisible(clue))
@@ -210,6 +216,7 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
       const order = item.hints.slice(from).flatMap(candidate => candidate.clues)
       const unlock = order.map(id => hidden.find(clue => clue.id === id)).find(Boolean) ?? hidden[0]
       if (unlock) {
+        opened = unlock.id
         const next = [...revealed, unlock.id]
         setRevealed(next)
         save({ revealed: next })
@@ -218,6 +225,8 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
       }
     }
     voidSays(text, '막혔어')
+    log.current.hint('requested', text, opened)
+    log.current.chat('막혔어, 도와줘', 'button', text, true)
   }
 
   // 가설 말하기 → 보이드가 판정(정답, 부분 정답, 오답). 정답이어야 작업대로 간다
@@ -243,9 +252,11 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
     setSolvedProblems(solved)
     save({ tries: nextTries, draft: text, solvedProblems: solved })
     setChat(previous => [...previous.slice(-7), { input: text, reply: { text: result.text } }])
+    log.current.attempt({ text, evidence, verdict: result.verdict, model: model?.model ?? null, feedback: result.text, solved })
     if (result.verdict !== 'correct') {
       const missCount = misses + 1
       setMisses(missCount)
+      if (missCount >= 2) log.current.hint('judge_feedback', nextHint())
       // 반복해서 정답이 아니면 힌트를 순서대로 하나 더 준다
       setVerdict(missCount >= 2 ? { ...result, text: `${result.text} 힌트: ${nextHint()}` } : result)
       return
@@ -269,14 +280,19 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
     if (running) return
     setTrial(null)
     save({ diagnosed: false })
+    log.current.rethink()
     setPhase('field')
     say('다시 살펴보자. 아직 안 해 본 조사가 있을까? 새로 알게 된 걸로 가설을 고쳐 봐.')
   }
   const writeThought = (id, value) => setThoughts(previous => ({ ...previous, [id]: value }))
-  const keepThoughts = () => save({ thoughts })
+  const keepThoughts = () => {
+    save({ thoughts })
+    log.current.notes(thoughts)
+  }
   const test = (index) => {
     const ok = trialResult(item, settings, index)
     animate(ok, () => {
+      log.current.trial(index, ok)
       if (!ok) {
         const failCount = failures + 1
         setFailures(failCount)
@@ -289,7 +305,11 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
           message = `${done.length ? `좋아! ${done.join(', ')} 문제는 해결했어. ` : ''}이제 남은 문제: ${left.join(', ')}. 가진 부품으로 해결할 방법을 골라 봐.`
         }
         say(message)
-        if (failCount >= 2) voidSays(nextHint(), '시험이 또 실패했어')
+        if (failCount >= 2) {
+          const help = nextHint()
+          voidSays(help, '시험이 또 실패했어')
+          log.current.hint('automatic', help)
+        }
         return
       }
       const next = [...new Set([...verified, index])]
@@ -298,6 +318,7 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
       say(item.pass)
       if (next.length === item.tests.length && !completed.current) {
         completed.current = true
+        log.current.complete()
         onComplete()
         setPhase('complete')
       }
@@ -309,6 +330,7 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
     const stillVerified = verified.filter(index => item.testControls?.[index] && !item.testControls[index].includes(id))
     setSettings(next)
     setVerified(stillVerified)
+    log.current.adjust(next)
     setTrial(null)
     say('설정을 바꿨어요. 아래에서 시험해 보세요.')
     save({ settings: next, verified: stillVerified })
@@ -356,9 +378,11 @@ function CasePlay({ item, records, investigation, surface, save, onComplete, onB
       pendingQuestion.current = null
       setAsking(false)
       setChat(previous => [...previous.slice(0, -1), { input, reply }])
+      log.current.chat(input, 'typed', reply?.text)
       return
     }
     setChat(previous => [...previous.slice(-7), { input, reply }])
+    log.current.chat(input, quick ? 'button' : 'typed', reply?.text)
   }
 
   const records6 = REPAIR_CASES.filter(candidate => records[candidate.id])

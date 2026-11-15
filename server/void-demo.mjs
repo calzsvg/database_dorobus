@@ -142,7 +142,7 @@ export async function judgeHypothesis({ apiKey, model = DEFAULT_MODEL, input, fe
   let reply = clean(result.reply)
   // 정답이 아닌 판정에서 완성된 답을 말해 버리면 그 대답은 버린다(게임의 정해진 되묻기 문구를 쓴다)
   if (result.verdict !== 'correct' && leaksAnswer(item, reply, { allowProblems: [...solved, ...explained] })) reply = ''
-  return { verdict: result.verdict, reply, explained }
+  return { verdict: result.verdict, reply, explained, model }
 }
 
 export function localVoidDemo(apiKey, model) {

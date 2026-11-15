@@ -37,3 +37,28 @@ systemctl --user restart dorobus.service   # 로그에 db=on
 - 예전에 브라우저(localStorage)에 남아 있던 진행은, 그 계정이 서버에 상태가 없을 때 처음 로그인하면 한 번 서버로 옮기고 브라우저에서 지운다.
 - DB 주소가 없는 개발 서버(`npm run dev`)에서만 예전처럼 브라우저 체험 모드로 동작한다.
 - API: `/api/auth/login`, `/api/auth/signup`, `/api/auth/logout`, `/api/session`, `/api/state`, `/api/players`, `/api/friend` (모두 POST, 사이트 주소 Origin 검사)
+
+## 수리 미션 행동 기록 (server/repair-log.mjs, 011_repair_messages.sql)
+게임 화면(src/pages/Repair.jsx → src/game/repairLog.js)이 행동마다 `/api/repair/*`로 보내고, 서버가 팀원 v3 테이블에 남긴다.
+
+| 게임 행동 | API | 기록 테이블 |
+|---|---|---|
+| 사건 시작, 이어 하기 | start | repair_runs (완료 전 도전이 있으면 이어 씀) |
+| 관찰, NPC 질문, 점검, 기록 버튼 | clue | repair_clue_discoveries (처음 본 순서) |
+| 수첩에 내 생각 적기 | notes | repair_clue_discoveries.note_text |
+| 막혔어 / 가설 2번 연속 실패 / 시험 2번 실패 | hint | repair_hint_events (requested / judge_feedback / automatic) |
+| 가설 제출 | attempt | learning_attempts, repair_attempt_evidence, repair_problem_solutions |
+| 다시 조사하기 | rethink | repair_runs.phase |
+| 작업대 설정 | adjust | repair_runs.settings, repair_trials.invalidated_at |
+| 작업대 시험 | trial | repair_trials (시험 버튼 순서 = repair_tests.display_order) |
+| 수리 완료 | complete | repair_runs, content_completions, 자동차면 issue_driving_license |
+| 대화창 질문과 답 | message | repair_messages (child typed/button, void) |
+
+### 팀원 repair-service.mjs와 다른 점 (확인 부탁)
+- **판정:** repair-service는 서버가 `voidJudge-8366c21` 규칙으로 다시 채점한다. 게임은 그 뒤 고친 규칙 + Gemini로 판정하므로, 어긋나지 않게 게임 판정을 그대로 기록한다.
+  - Gemini를 쓴 판정은 `judge_source='hybrid'`, `model_id`, `prompt_version='server/prompts'`
+  - 규칙만 쓴 판정은 `judge_source='rule'`, `rule_version='game-voidJudge'`
+- **진행 막기:** 서버가 진행을 막지 않는다(축제 스탬프, 원격 자격증 조건은 게임이 판단). 단 003의 `run_conditional_license_fk` 때문에 자동차 외 사건은 DB 운전면허가 있어야 기록된다. 이 기능 전에 게임에서만 면허를 받은 계정은 자동차 사건을 다시 하기 전까지 축제 사건이 기록되지 않는다(409 license_required). 가짜 면허를 만들지 않았다.
+- **보상:** CELL은 게임 상태(user_game_states)에서 주므로 wallets, reward_claims, cell_transactions에는 쓰지 않는다(이중 지급 방지).
+- **wrong_hypothesis_code:** 아직 비워 둔다(게임 판정 결과에 오답 유형 코드가 없음).
+- **대화 저장:** 002 주석은 "전체 대화 저장 테이블은 만들지 않는다"였지만, 성장 보고서 설계안(6.2 messages)에 따라 011에서 대화창 내용만 추가했다.
