@@ -1,0 +1,7 @@
+Kenney (www.kenney.nl) 2D 스프라이트, CC0 1.0 (LICENSE-Kenney-CC0.txt)
+투명한 여백만 잘라 냈다. 원래 파일명 앞의 팩 접두어(platformIndustrial_)는 industrial_로 줄였다.
+
+Background Elements Remastered: backgroundColorGrass, backgroundColorFall, tree, treePine, treeLong, bush1, bushAlt1, cloud1, cloud3, sun, moon, fence
+Platformer Pack Industrial: industrial_029, 031, 035, 036, 037, 039, 040, 057, 067, 070, 098
+Shooting Gallery: bg_wood, curtain_straight
+Platformer Assets Holiday: present_large_red, present_large_yellow, present_small_orange, ball_blue, ball_red, ball_yellow

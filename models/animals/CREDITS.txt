@@ -1,0 +1,8 @@
+도로랜드 동물 모델 출처 (Poly Pizza, https://poly.pizza)
+
+- giraffe.glb  : "Giraffe" by elkiotbear, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)  https://poly.pizza/m/gTFDiaGp8D
+- elephant.glb : "Elephant" by elkiotbear, CC BY 3.0  https://poly.pizza/m/3AfO8NwcxD
+- lion.glb     : "Lion" by Poly by Google, CC BY 3.0  https://poly.pizza/m/daMBBUnd9c9
+- duck.glb     : "Duck" by jeremy, CC BY 3.0  https://poly.pizza/m/2KHEgw1ztVI
+
+원본 모델을 그대로 쓰고, 크기와 방향만 코드(src/world/Animals.jsx)에서 맞춘다.

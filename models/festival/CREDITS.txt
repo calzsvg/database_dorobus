@@ -1,0 +1,17 @@
+Models by Kenney, CC0 1.0 Universal.
+https://creativecommons.org/publicdomain/zero/1.0/
+Packs: Coaster Kit, Furniture Kit, Food Kit, Factory Kit, Car Kit, Holiday Kit.
+Source archive: https://github.com/shorepine/kenney/tree/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d
+coaster/stall-food
+coaster/stall-drinks
+coaster/station-fence
+coaster/support-large
+furniture/chairDesk
+furniture/tableRound
+food/burger-cheese
+factory/conveyor-long-sides
+factory/box-large
+car/van
+car/delivery-flat
+holiday/present-a-cube
+holiday/lights-colored
