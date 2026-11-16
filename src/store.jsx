@@ -24,7 +24,7 @@ export const SHOP_ITEMS = [
 // 서버에 DB API가 없을 때(개발 서버에 DB 주소가 없음, API 없는 정적 사이트)만 브라우저 localStorage 체험 모드로 동작한다.
 const DEV = import.meta.env.DEV
 const SAVE_DELAY = 1500 // 마지막 변경 뒤 이만큼 기다렸다가 저장 (ms)
-const SYNC_EVERY = 60_000 // 친구 방문·좋아요 반영과 친구 목록 갱신 주기 (ms)
+const SYNC_EVERY = 30_000 // 다른 곳에서 바뀐 진행, 친구 방문·좋아요 반영과 친구 목록 갱신 주기 (ms)
 
 async function api(path, body = {}, { keepalive = false } = {}) {
   try {
@@ -98,8 +98,10 @@ export function StoreProvider({ children }) {
   const [data, setData] = useState(null)
   const [players, setPlayers] = useState([])
   const [playersReady, setPlayersReady] = useState(false)
+  const [notice, setNotice] = useState('')
   const mode = useRef(null) // 'db' | 'local'
   const seen = useRef(0) // 화면 상태에 이미 반영한 친구 일 번호
+  const rev = useRef(0) // 이 화면이 마지막으로 받은 서버 진행의 판 번호. 저장할 때 같아야 덮어쓸 수 있다
   const dataRef = useRef(null)
   const pending = useRef(null) // 아직 저장하지 않은 최신 상태
   const saving = useRef(false)
@@ -118,13 +120,20 @@ export function StoreProvider({ children }) {
 
   // 서버가 준 계정·게임 상태로 시작한다. 서버에 상태가 없으면(첫 로그인) 시작 상태를 만들어 바로 저장한다.
   // 브라우저에 남아 있던 예전 진행(DB 전환 전 localStorage)은 쓰지 않고 지운다. 진행은 서버에만 있다.
-  const adopt = ({ user: profile, state, seenEvent }) => {
-    const u = fromDb(profile)
-    mode.current = 'db'
+  // 서버 진행으로 화면 상태를 바꾼다(계정은 그대로)
+  const applyServer = ({ state, seenEvent, revision }, u) => {
     seen.current = seenEvent || 0
+    rev.current = revision || 0
+    pending.current = null
+    clearTimeout(timer.current)
     skipSave.current = !!state
-    setUser(u)
     setData(normalize(state || startState(u)))
+  }
+  const adopt = (body) => {
+    const u = fromDb(body.user)
+    mode.current = 'db'
+    setUser(u)
+    applyServer(body, u)
     remove(dataKey(u.id))
     remove(SESSION_KEY)
     setPlayersReady(false)
@@ -155,6 +164,12 @@ export function StoreProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (!notice) return
+    const id = setTimeout(() => setNotice(''), 6000)
+    return () => clearTimeout(id)
+  }, [notice])
+
   // 서버 저장: 한 번에 하나씩, 저장 중에 바뀐 것은 끝난 뒤 이어서 저장한다
   const flush = async ({ keepalive = false } = {}) => {
     clearTimeout(timer.current)
@@ -162,9 +177,16 @@ export function StoreProvider({ children }) {
     const state = pending.current
     pending.current = null
     saving.current = true
-    const r = await api('/api/state', { state, seenEvent: seen.current }, { keepalive })
+    const r = await api('/api/state', { state, seenEvent: seen.current, baseRevision: rev.current }, { keepalive })
     saving.current = false
+    if (r.status === 409) {
+      // 같은 계정이 다른 곳(다른 컴퓨터, 다른 탭)에서 먼저 저장했다: 이 화면의 진행 대신 서버의 최신 진행을 쓴다
+      applyServer(r.body, fromDb(r.body.user))
+      setNotice('다른 곳에서 이 계정으로 플레이한 최신 진행을 불러왔어요.')
+      return
+    }
     if (r.status === 200) {
+      rev.current = r.body.revision ?? rev.current
       seen.current = r.body.seenEvent ?? seen.current
       // 친구가 내 방에서 한 일(서버에는 이미 반영됨)을 화면에도 반영한다
       if (r.body.events?.length) setData((d) => (d ? applyFriendEvents(d, r.body.events) : d))
@@ -189,16 +211,35 @@ export function StoreProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, data])
 
-  // 탭을 닫거나 숨길 때 남은 변경을 바로 보낸다. 1분마다 친구 일 반영·친구 목록 갱신.
+  // 저장할 것이 없을 때 서버 진행이 이 화면보다 새것(다른 곳에서 플레이, 친구 방문)이면 서버 것으로 바꾼다
+  const refresh = async () => {
+    if (mode.current !== 'db' || saving.current || pending.current) return
+    const r = await api('/api/session')
+    if (r.status === 401) {
+      setUser(null)
+      setData(null)
+      return
+    }
+    if (r.status !== 200 || saving.current || pending.current) return
+    if ((r.body.revision ?? 0) !== rev.current) {
+      applyServer(r.body, fromDb(r.body.user))
+      setNotice('다른 곳에서 이 계정으로 플레이한 최신 진행을 불러왔어요.')
+    } else if ((r.body.seenEvent ?? 0) > seen.current && r.body.state) {
+      // 친구 방문·좋아요만 늘었으면 조용히 반영
+      applyServer(r.body, fromDb(r.body.user))
+    }
+  }
+
+  // 탭을 닫거나 숨길 때 남은 변경을 바로 보낸다. 탭으로 돌아오면, 그리고 30초마다 서버의 최신 진행을 확인한다.
   useEffect(() => {
     if (!user) return
     const hide = () => {
       if (document.visibilityState === 'hidden' && pending.current) flush({ keepalive: JSON.stringify(pending.current).length < 60000 })
+      if (document.visibilityState === 'visible') refresh()
     }
     const sync = setInterval(() => {
       if (mode.current !== 'db' || document.visibilityState === 'hidden') return
-      if (!pending.current && dataRef.current) pending.current = dataRef.current
-      flush()
+      refresh()
       refreshPlayers()
     }, SYNC_EVERY)
     document.addEventListener('visibilitychange', hide)
@@ -261,7 +302,7 @@ export function StoreProvider({ children }) {
     if (mode.current === 'db') {
       if (pending.current) {
         clearTimeout(timer.current)
-        await api('/api/state', { state: pending.current, seenEvent: seen.current })
+        await api('/api/state', { state: pending.current, seenEvent: seen.current, baseRevision: rev.current })
         pending.current = null
       }
       await api('/api/auth/logout')
@@ -407,6 +448,7 @@ export function StoreProvider({ children }) {
       }}
     >
       {children}
+      {notice && <div className="store-notice" role="status" onClick={() => setNotice('')}>{notice}</div>}
     </StoreContext.Provider>
   )
 }

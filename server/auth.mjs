@@ -94,11 +94,12 @@ export function createAuth(databaseUrl, { secureCookie = true } = {}) {
     return row
   }
 
-  // 로그인 직후·새로고침 때 화면에 줄 것: 계정 정보, 저장된 게임 상태(없으면 null), 이미 반영된 친구 일 번호
-  async function snapshot(row) {
-    const saved = (await query('SELECT state FROM dorobus.user_game_states WHERE user_id = $1', [row.uid])).rows[0]
-    const last = (await query('SELECT max(id) AS id FROM dorobus.user_game_events WHERE user_id = $1', [row.uid])).rows[0]
-    return { user: toProfile(row), state: saved?.state ?? null, seenEvent: Number(last?.id ?? 0) }
+  // 로그인 직후·새로고침 때 화면에 줄 것: 계정 정보, 저장된 게임 상태(없으면 null)와 그 판 번호(revision), 이미 반영된 친구 일 번호
+  async function snapshot(row, c = null) {
+    const q = c ? (sql, params) => c.query(sql, params) : query
+    const saved = (await q('SELECT state, revision FROM dorobus.user_game_states WHERE user_id = $1', [row.uid])).rows[0]
+    const last = (await q('SELECT max(id) AS id FROM dorobus.user_game_events WHERE user_id = $1', [row.uid])).rows[0]
+    return { user: toProfile(row), state: saved?.state ?? null, revision: saved ? Number(saved.revision) : 0, seenEvent: Number(last?.id ?? 0) }
   }
 
   async function startSession(row) {
@@ -141,21 +142,26 @@ export function createAuth(databaseUrl, { secureCookie = true } = {}) {
   }
 
   // 게임 상태 저장. 화면이 아직 모르는 친구 일(seenEvent 이후)은 서버가 저장할 상태에 반영하고 화면에도 돌려준다.
+  // 같은 계정을 두 곳에서 열었을 때 서로 덮어쓰지 않도록, 화면이 마지막으로 받은 판 번호(baseRevision)가
+  // 서버 판 번호와 다르면 저장하지 않고 409와 함께 서버의 최신 상태를 돌려준다(화면은 그것으로 바꾼다).
   async function saveState(input, _ctx, me) {
     const state = input?.state
     const seen = Number.isSafeInteger(input?.seenEvent) && input.seenEvent >= 0 ? input.seenEvent : 0
-    if (!isState(state) || JSON.stringify(state).length > STATE_LIMIT) return { status: 400, body: {} }
+    const base = Number.isSafeInteger(input?.baseRevision) && input.baseRevision >= 0 ? input.baseRevision : null
+    if (!isState(state) || base === null || JSON.stringify(state).length > STATE_LIMIT) return { status: 400, body: {} }
     return tx(async (c) => {
-      await c.query('SELECT 1 FROM dorobus.user_game_states WHERE user_id = $1 FOR UPDATE', [me.uid])
+      const current = (await c.query('SELECT revision FROM dorobus.user_game_states WHERE user_id = $1 FOR UPDATE', [me.uid])).rows[0]
+      if (Number(current?.revision ?? 0) !== base) return { status: 409, body: await snapshot(me, c), rollback: true }
       const events = (await c.query('SELECT id, kind, payload FROM dorobus.user_game_events WHERE user_id = $1 ORDER BY id', [me.uid])).rows
         .map((e) => ({ id: Number(e.id), kind: e.kind, payload: e.payload }))
       const fresh = events.filter((e) => e.id > seen)
       const final = fresh.reduce((s, e) => applyFriendOp(s, e.kind, e.payload) ?? s, state)
       await c.query(`INSERT INTO dorobus.user_game_states (user_id, state) VALUES ($1, $2)
         ON CONFLICT (user_id) DO UPDATE SET state = EXCLUDED.state, revision = dorobus.user_game_states.revision + 1, updated_at = now()`, [me.uid, final])
+      // (새로 만들 때 revision 기본값은 1 = base 0 + 1)
       const top = events.length ? events[events.length - 1].id : 0
       if (top) await c.query('DELETE FROM dorobus.user_game_events WHERE user_id = $1 AND id <= $2', [me.uid, top])
-      return { status: 200, body: { events: fresh, seenEvent: Math.max(seen, top) } }
+      return { status: 200, body: { events: fresh, seenEvent: Math.max(seen, top), revision: base + 1 } }
     })
   }
 
@@ -187,7 +193,8 @@ export function createAuth(databaseUrl, { secureCookie = true } = {}) {
       if (!row) return { status: 404, body: {}, rollback: true }
       const next = applyFriendOp(row.state, kind, payload)
       if (!next) return { status: 409, body: {}, rollback: true }
-      await c.query('UPDATE dorobus.user_game_states SET state = $2, revision = revision + 1, updated_at = now() WHERE user_id = $1', [row.user_id, next])
+      // 판 번호는 올리지 않는다: 방 주인 화면은 친구 일(events)로 따로 반영하므로 주인의 저장을 막지 않는다
+      await c.query('UPDATE dorobus.user_game_states SET state = $2, updated_at = now() WHERE user_id = $1', [row.user_id, next])
       await c.query('INSERT INTO dorobus.user_game_events (user_id, kind, payload) VALUES ($1, $2, $3)', [row.user_id, kind, payload])
       return { status: 200, body: { minigame: next.progress?.minigame ?? null } }
     })
